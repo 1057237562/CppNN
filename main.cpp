@@ -25,7 +25,7 @@ int main(void)
         train_data.push_back({ train_image[i], mat });
     }
 
-    Network network({ new FlattenLayer(28, 28), new FullyConnectedLayer(28 * 28, 16), new SigmoidLayer(16), new FullyConnectedLayer(16, 16), new RELULayer(16), new FullyConnectedLayer(16, 10), new SigmoidLayer(10) }, new SDG(train_data, 0.5, 10));
+    Network network({ new FlattenLayer(28, 28), new DenseLayer(28 * 28, 16), new SigmoidLayer(), new DenseLayer(16, 16), new SigmoidLayer(), new DenseLayer(16, 10), new SigmoidLayer() }, new SDG(train_data, 0.5, 10));
     network.init();
     network.train(1);
 

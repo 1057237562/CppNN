@@ -72,14 +72,14 @@ public:
     virtual void learn(Optimizer* optimizer) = 0;
 };
 
-class FullyConnectedLayer : public LinearLayer {
+class DenseLayer : public LinearLayer {
 protected:
     Mat w, b;
 
 public:
     Mat delta_w, delta_b;
     Mat nabla_w, nabla_b;
-    FullyConnectedLayer(int in, int out)
+    DenseLayer(int in, int out)
         : LinearLayer(in, out)
         , w(in, out)
         , b(1, out)
@@ -121,10 +121,12 @@ public:
     }
 };
 
-class SigmoidLayer : public LinearLayer {
+class SigmoidLayer : public Layer {
+protected:
+    Mat x, y;
+
 public:
-    SigmoidLayer(int in)
-        : LinearLayer(in, in)
+    SigmoidLayer()
     {
     }
     Mat forward(Mat& in)
@@ -147,10 +149,12 @@ public:
     }
 };
 
-class RELULayer : public LinearLayer {
+class RELULayer : public Layer {
+protected:
+    Mat x, y;
+
 public:
-    RELULayer(int in)
-        : LinearLayer(in, in)
+    RELULayer()
     {
     }
     Mat forward(Mat& in)
@@ -170,6 +174,59 @@ public:
 
     void learn(Optimizer* optimizer)
     {
+    }
+};
+
+class ConvLayer : public Layer {
+protected:
+    Mat x, y;
+    int kernel_size, stride, padding;
+    Mat w, b;
+    Mat delta_w, delta_b;
+    Mat nabla_w, nabla_b;
+
+public:
+    ConvLayer(int in, int out, int kernel_size, int stride, int padding)
+        : w(kernel_size * kernel_size * in, out)
+        , b(1, out)
+        , delta_w(kernel_size * kernel_size * in, out)
+        , delta_b(1, out)
+        , nabla_w(kernel_size * kernel_size * in, out)
+        , nabla_b(1, out)
+    {
+        this->kernel_size = kernel_size;
+        this->stride = stride;
+        this->padding = padding;
+        nabla_w.clear(), nabla_b.clear();
+    }
+    Mat forward(Mat& in)
+    {
+        Mat ret = mutil::conv(in, w, stride, padding) + b;
+        x = in;
+        y = ret;
+        return ret;
+    }
+    Mat backward(Mat& in)
+    {
+        delta_w = mutil::conv(x, in, stride, padding);
+        delta_b = in;
+        nabla_w += delta_w;
+        nabla_b += delta_b;
+        Mat wT = w.transpose();
+        return mutil::deconv(in, wT, stride, padding);
+    }
+
+    void randomize(default_random_engine& e)
+    {
+        w.randomize(e), b.randomize(e);
+    }
+
+    void learn(Optimizer* optimizer)
+    {
+        w = optimizer->optimize(w, nabla_w);
+        b = optimizer->optimize(b, nabla_b);
+        nabla_w.clear();
+        nabla_b.clear();
     }
 };
 

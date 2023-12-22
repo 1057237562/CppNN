@@ -48,6 +48,7 @@ class Mat {
 
 public:
     pair<int, int> size;
+    Mat() { }
     Mat(int m, int n)
         : val(m * n)
     {
@@ -216,6 +217,58 @@ Mat& relu_prime(Mat& in)
         }
     }
     return in;
+}
+
+Mat conv(Mat& in, Mat& kernel, int stride, int padding)
+{
+    int in_height = in.size.first;
+    int in_width = in.size.second;
+    int kernel_height = kernel.size.first;
+    int kernel_width = kernel.size.second;
+    int out_height = (in_height - kernel_height + 2 * padding) / stride + 1;
+    int out_width = (in_width - kernel_width + 2 * padding) / stride + 1;
+    Mat out(out_height, out_width);
+    for (int i = 0; i < out_height; i++) {
+        for (int j = 0; j < out_width; j++) {
+            float sum = 0;
+            for (int k = 0; k < kernel_height; k++) {
+                for (int l = 0; l < kernel_width; l++) {
+                    int x = i * stride + k - padding;
+                    int y = j * stride + l - padding;
+                    if (x >= 0 && x < in_height && y >= 0 && y < in_width) {
+                        sum += in[x][y] * kernel[k][l];
+                    }
+                }
+            }
+            out[i][j] = sum;
+        }
+    }
+    return out;
+}
+
+Mat deconv(Mat& in, Mat& kernel, int stride, int padding)
+{
+    int in_height = in.size.first;
+    int in_width = in.size.second;
+    int kernel_height = kernel.size.first;
+    int kernel_width = kernel.size.second;
+    int out_height = (in_height - 1) * stride + kernel_height - 2 * padding;
+    int out_width = (in_width - 1) * stride + kernel_width - 2 * padding;
+    Mat out(out_height, out_width);
+    for (int i = 0; i < in_height; i++) {
+        for (int j = 0; j < in_width; j++) {
+            for (int k = 0; k < kernel_height; k++) {
+                for (int l = 0; l < kernel_width; l++) {
+                    int x = i * stride + k - padding;
+                    int y = j * stride + l - padding;
+                    if (x >= 0 && x < out_height && y >= 0 && y < out_width) {
+                        out[x][y] += in[i][j] * kernel[k][l];
+                    }
+                }
+            }
+        }
+    }
+    return out;
 }
 }
 
