@@ -10,6 +10,8 @@ using namespace mutil;
 
 int main(void)
 {
+    cin.tie(0);
+
     vector<Mat> train_image = read_mnist_images("./train-images.idx3-ubyte");
     vector<int> train_label = read_mnist_labels("./train-labels.idx1-ubyte");
 

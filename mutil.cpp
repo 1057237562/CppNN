@@ -17,31 +17,31 @@ static int constructTime = 0;
 static int multiplyTime = 0;
 static int multiplyCount = 0;
 
-// class Vec {
+class Vec {
 
-// public:
-//     vector<float> val;
-//     int length;
-//     Vec(int len)
-//     {
-//         length = len;
-//         val = vector<float>(length);
-//     }
+public:
+    vector<float> val;
+    int length;
+    Vec(int len)
+    {
+        length = len;
+        val = vector<float>(length);
+    }
 
-//     float& operator[](int index)
-//     {
-//         assert(index >= 0 && index < length);
-//         return val[index];
-//     }
+    float& operator[](int index)
+    {
+        assert(index >= 0 && index < length);
+        return val[index];
+    }
 
-//     void randomize(default_random_engine& e)
-//     {
-//         normal_distribution<float> u(0, 1);
-//         for (int i = 0; i < length; i++) {
-//             val[i] = u(e);
-//         }
-//     }
-// };
+    void randomize(default_random_engine& e)
+    {
+        normal_distribution<float> u(0, 1);
+        for (int i = 0; i < length; i++) {
+            val[i] = u(e);
+        }
+    }
+};
 
 class Mat {
     vector<float> val;
