@@ -25,7 +25,7 @@ int reverseInt(int i)
 vector<Mat> read_mnist_images(string full_path)
 {
     vector<Mat> result;
-    ifstream file(full_path + "/t10k-images.idx3-ubyte", ios::binary);
+    ifstream file(full_path, ios::binary);
     if (file.is_open()) {
         int magic_number = 0;
         int number_of_images = 0;
@@ -60,7 +60,7 @@ vector<Mat> read_mnist_images(string full_path)
 vector<int> read_mnist_labels(string full_path)
 {
     vector<int> result;
-    ifstream file(full_path + "/t10k-labels.idx1-ubyte", ios::binary);
+    ifstream file(full_path, ios::binary);
     if (file.is_open()) {
         int magic_number = 0;
         int number_of_labels = 0;

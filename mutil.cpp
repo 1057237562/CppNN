@@ -44,35 +44,23 @@ static int multiplyCount = 0;
 // };
 
 class Mat {
+    vector<float> val;
+
 public:
-    float* val = nullptr;
     pair<int, int> size;
     Mat(int m, int n)
+        : val(m * n)
     {
         auto start = clock();
-        val = new float[m * n];
         auto end = clock();
         constructTime += end - start;
         size = { m, n };
     }
 
-    Mat(const Mat& other)
-        : val(new float[other.size.first * other.size.second])
-        , size(other.size)
-    {
-        memcpy(val, other.val, sizeof(float) * size.first * size.second);
-        ++copyCount;
-    }
-
-    ~Mat()
-    {
-        delete[] val;
-    }
-
-    float* operator[](int index)
+    auto operator[](int index)
     {
         assert(index >= 0 && index < size.first);
-        return val + index * size.second;
+        return val.begin() + index * size.second;
     }
 
     Mat& dot(Mat& other)
@@ -141,7 +129,7 @@ public:
                 Bcolj[k] = other[k][j];
             }
             for (int i = 0; i < size.first; i++) {
-                float* Arowi = (*this)[i];
+                auto Arowi = (*this)[i];
                 float s = 0;
                 for (int k = 0; k < size.second; k++) {
                     s += Arowi[k] * Bcolj[k];
