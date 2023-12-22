@@ -186,13 +186,13 @@ protected:
     Mat nabla_w, nabla_b;
 
 public:
-    ConvLayer(int in, int out, int kernel_size, int stride, int padding)
-        : w(kernel_size * kernel_size * in, out)
-        , b(1, out)
-        , delta_w(kernel_size * kernel_size * in, out)
-        , delta_b(1, out)
-        , nabla_w(kernel_size * kernel_size * in, out)
-        , nabla_b(1, out)
+    ConvLayer(int kernel_count, int kernel_size, int stride, int padding)
+        : w(kernel_size * kernel_size, kernel_count)
+        , b(1, kernel_count)
+        , delta_w(kernel_size * kernel_size, kernel_count)
+        , delta_b(1, kernel_count)
+        , nabla_w(kernel_size * kernel_size, kernel_count)
+        , nabla_b(1, kernel_count)
     {
         this->kernel_size = kernel_size;
         this->stride = stride;
