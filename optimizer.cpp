@@ -14,7 +14,7 @@ public:
     int index = 0;
     virtual Mat cost_derivative(Mat& result, Mat& answer) = 0;
     virtual Mat optimize(Mat& mat, Mat& nabla) = 0;
-    virtual pair<Mat, Mat> next() = 0;
+    virtual pair<Mat, Mat>& next() = 0;
     virtual bool hasNext() = 0;
     virtual bool end() = 0;
     virtual void shuffle() = 0;
@@ -45,7 +45,7 @@ public:
         return mat - ret;
     }
 
-    pair<Mat, Mat> next()
+    pair<Mat, Mat>& next()
     {
         if (index == training_data.size() - 1) {
             index = 0;

@@ -10,7 +10,8 @@
                 "main.cpp",
                 "-o",
                 "${fileDirname}\\main.exe",
-                "-std=c++11"
+                "-std=c++20",
+                // "-O2"
             ],
             "options": {
                 "cwd": "${fileDirname}"

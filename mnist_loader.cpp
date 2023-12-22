@@ -43,16 +43,15 @@ vector<Mat> read_mnist_images(string full_path)
         n_rows = reverseInt(n_rows);
         file.read((char*)&n_cols, sizeof(n_cols));
         n_cols = reverseInt(n_cols);
+        result.resize(number_of_images, Mat(n_rows, n_cols));
         for (int i = 0; i < number_of_images; ++i) {
-            Mat mat(n_rows, n_cols);
             for (int r = 0; r < n_rows; ++r) {
                 for (int c = 0; c < n_cols; ++c) {
                     unsigned char temp = 0;
                     file.read((char*)&temp, sizeof(temp));
-                    mat[r][c] = int(temp) / 255.0;
+                    result[i][r][c] = int(temp) / 255.0;
                 }
             }
-            result.push_back(mat);
         }
     }
     return result;

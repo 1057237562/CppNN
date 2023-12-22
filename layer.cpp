@@ -88,6 +88,7 @@ public:
         , nabla_w(in, out)
         , nabla_b(1, out)
     {
+        nabla_w.clear(), nabla_b.clear();
     }
     Mat forward(Mat& in)
     {
@@ -98,7 +99,7 @@ public:
     }
     Mat backward(Mat& in)
     {
-        delta_w = Mat({ x }).transpose() * in;
+        delta_w = x.transpose() * in;
         delta_b = in;
         nabla_w += delta_w;
         nabla_b += delta_b;

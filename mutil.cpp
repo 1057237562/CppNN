@@ -12,55 +12,67 @@ using namespace std;
 
 namespace mutil {
 
+static int copyCount = 0;
+static int constructTime = 0;
 static int multiplyTime = 0;
 static int multiplyCount = 0;
 
-class Vec {
+// class Vec {
 
-public:
-    vector<float> val;
-    int length;
-    Vec(int len)
-    {
-        length = len;
-        val = vector<float>(length);
-    }
+// public:
+//     vector<float> val;
+//     int length;
+//     Vec(int len)
+//     {
+//         length = len;
+//         val = vector<float>(length);
+//     }
 
-    float& operator[](int index)
-    {
-        assert(index >= 0 && index < length);
-        return val[index];
-    }
+//     float& operator[](int index)
+//     {
+//         assert(index >= 0 && index < length);
+//         return val[index];
+//     }
 
-    void randomize(default_random_engine& e)
-    {
-        normal_distribution<float> u(0, 1);
-        for (int i = 0; i < length; i++) {
-            val[i] = u(e);
-        }
-    }
-};
+//     void randomize(default_random_engine& e)
+//     {
+//         normal_distribution<float> u(0, 1);
+//         for (int i = 0; i < length; i++) {
+//             val[i] = u(e);
+//         }
+//     }
+// };
 
 class Mat {
 public:
-    vector<Vec> val;
+    float* val = nullptr;
     pair<int, int> size;
     Mat(int m, int n)
     {
-        val = vector<Vec>(m, Vec(n));
+        auto start = clock();
+        val = new float[m * n];
+        auto end = clock();
+        constructTime += end - start;
         size = { m, n };
     }
 
-    Mat(vector<Vec> v)
+    Mat(const Mat& other)
+        : val(new float[other.size.first * other.size.second])
+        , size(other.size)
     {
-        val = v;
-        size = { (int)v.size(), (int)v[0].length };
+        memcpy(val, other.val, sizeof(float) * size.first * size.second);
+        ++copyCount;
     }
 
-    Vec& operator[](int index)
+    ~Mat()
+    {
+        delete[] val;
+    }
+
+    float* operator[](int index)
     {
         assert(index >= 0 && index < size.first);
-        return val[index];
+        return val + index * size.second;
     }
 
     Mat& dot(Mat& other)
@@ -68,7 +80,7 @@ public:
         assert(size.first == other.size.first && size.second == other.size.second);
         for (int i = 0; i < size.first; i++) {
             for (int j = 0; j < size.second; j++) {
-                val[i][j] *= other[i][j];
+                (*this)[i][j] *= other[i][j];
             }
         }
         return *this;
@@ -79,7 +91,7 @@ public:
         assert(size.first == other.size.first && size.second == other.size.second);
         for (int i = 0; i < size.first; i++) {
             for (int j = 0; j < size.second; j++) {
-                val[i][j] += other[i][j];
+                (*this)[i][j] += other[i][j];
             }
         }
         return *this;
@@ -90,7 +102,7 @@ public:
         assert(size.first == other.size.first && size.second == other.size.second);
         for (int i = 0; i < size.first; i++) {
             for (int j = 0; j < size.second; j++) {
-                val[i][j] += other[i][j];
+                (*this)[i][j] += other[i][j];
             }
         }
         return *this;
@@ -101,7 +113,7 @@ public:
         assert(size.first == other.size.first && size.second == other.size.second);
         for (int i = 0; i < size.first; i++) {
             for (int j = 0; j < size.second; j++) {
-                val[i][j] -= other[i][j];
+                (*this)[i][j] -= other[i][j];
             }
         }
         return *this;
@@ -112,7 +124,7 @@ public:
         assert(size.first == other.size.first && size.second == other.size.second);
         for (int i = 0; i < size.first; i++) {
             for (int j = 0; j < size.second; j++) {
-                val[i][j] -= other[i][j];
+                (*this)[i][j] -= other[i][j];
             }
         }
         return *this;
@@ -129,7 +141,7 @@ public:
                 Bcolj[k] = other[k][j];
             }
             for (int i = 0; i < size.first; i++) {
-                Vec& Arowi = val[i];
+                float* Arowi = (*this)[i];
                 float s = 0;
                 for (int k = 0; k < size.second; k++) {
                     s += Arowi[k] * Bcolj[k];
@@ -147,7 +159,7 @@ public:
     {
         for (int i = 0; i < size.first; i++) {
             for (int j = 0; j < size.second; j++) {
-                val[i][j] *= theta;
+                (*this)[i][j] *= theta;
             }
         }
         return *this;
@@ -158,7 +170,7 @@ public:
         Mat res(size.second, size.first);
         for (int i = 0; i < size.first; i++) {
             for (int j = 0; j < size.second; j++) {
-                res[j][i] = val[i][j];
+                res[j][i] = (*this)[i][j];
             }
         }
         return res;
@@ -166,16 +178,19 @@ public:
 
     void randomize(default_random_engine& e)
     {
-        for (auto& vec : val) {
-            vec.randomize(e);
+        normal_distribution<float> u(0, 1);
+        for (int i = 0; i < size.first; i++) {
+            for (int j = 0; j < size.second; j++) {
+                (*this)[i][j] = u(e);
+            }
         }
     }
 
     void clear()
     {
-        for (auto& vec : val) {
-            for (int i = 0; i < vec.length; i++) {
-                vec[i] = 0;
+        for (int i = 0; i < size.first; i++) {
+            for (int j = 0; j < size.second; j++) {
+                (*this)[i][j] = 0;
             }
         }
     }

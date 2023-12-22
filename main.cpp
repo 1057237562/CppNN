@@ -26,7 +26,7 @@ int main(void)
 
     for (int i = 0; i < 10; i++) {
         Mat result = network.forward(training_image[i]);
-        cout << "result: " << max_element(result[0].val.begin(), result[0].val.end()) - result[0].val.begin() << "  ";
+        cout << "result: " << max_element(result[0], result[0] + 10) - result[0] << "  ";
         cout << "answer: " << training_label[i] << endl;
     }
 
@@ -34,5 +34,7 @@ int main(void)
     cout << "backward time: " << network.backwardTime / (float)CLOCKS_PER_SEC << endl;
     cout << "matrix multiplication time: " << mutil::multiplyTime / (float)CLOCKS_PER_SEC << endl;
     cout << "matrix multiplication count: " << mutil::multiplyCount << endl;
+    cout << "matrix construct time:" << mutil::constructTime / (float)CLOCKS_PER_SEC << endl;
+    cout << "matrix copy count:" << mutil::copyCount << endl;
     return 0;
 }
