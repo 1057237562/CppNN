@@ -4,7 +4,7 @@
 #include <iostream>
 #include <time.h>
 #include <vector>
-
+#define endl '\n'
 using namespace std;
 using namespace mutil;
 

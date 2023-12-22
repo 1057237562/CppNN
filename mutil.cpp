@@ -123,20 +123,13 @@ public:
         assert(size.second == other.size.first);
         auto start = clock();
         Mat res(size.first, other.size.second);
-        float Bcolj[size.second]; // Accelerate matrix multiplication
-        for (int j = 0; j < other.size.second; j++) {
-            for (int k = 0; k < size.second; k++) {
-                Bcolj[k] = other[k][j];
+        float r;
+        for (int i = 0; i < size.first; ++i)
+            for (int k = 0; k < size.second; ++k) {
+                r = (*this)[i][k];
+                for (int j = 0; j < other.size.second; ++j)
+                    res[i][j] += other[k][j] * r;
             }
-            for (int i = 0; i < size.first; i++) {
-                auto Arowi = (*this)[i];
-                float s = 0;
-                for (int k = 0; k < size.second; k++) {
-                    s += Arowi[k] * Bcolj[k];
-                }
-                res[i][j] = s;
-            }
-        }
         auto end = clock();
         multiplyTime += end - start;
         ++multiplyCount;
