@@ -5,6 +5,7 @@
 #include "layer.cpp"
 #include "mutil.cpp"
 #include "optimizer.cpp"
+#include <functional>
 #include <iostream>
 #include <random>
 #include <time.h>
@@ -19,6 +20,7 @@ protected:
     Optimizer* optimizer;
 
 public:
+    function<Mat(Mat, Mat)> costfunc = [&](Mat res, Mat ans) { return res - ans; };
     int forwardTime = 0;
     int backwardTime = 0;
     Network(vector<Layer*> layers, Optimizer* optimizer)
@@ -58,7 +60,7 @@ public:
     void backPropagation(Mat result, Mat answer)
     {
         auto start = clock();
-        Mat delta = optimizer->cost_derivative(result, answer);
+        Mat delta = costfunc(result, answer);
         for (int i = layers.size() - 1; i >= 0; i--) {
             delta = layers[i]->backward(delta);
         }
@@ -69,6 +71,7 @@ public:
     void train(int training_times = 1)
     {
         for (int i = 0; i < training_times; i++) {
+            cout << "Training " << i + 1 << "/" << training_times << endl;
             optimizer->shuffle();
             for (auto data = optimizer->next(); !optimizer->end();) {
                 for (data = optimizer->next(); optimizer->hasNext(); data = optimizer->next()) {
@@ -79,7 +82,7 @@ public:
                     layer->learn(optimizer);
                 }
                 cout << "Processing Batches" << ((optimizer->index + 1) / 10) << "/"
-                     << (10000 / 10) << endl;
+                     << (optimizer->count() / 10) << endl;
             }
         }
     }

@@ -12,12 +12,12 @@ class Optimizer {
 
 public:
     int index = 0;
-    virtual Mat cost_derivative(Mat& result, Mat& answer) = 0;
     virtual Mat optimize(Mat& mat, Mat& nabla) = 0;
     virtual pair<Mat, Mat>& next() = 0;
     virtual bool hasNext() = 0;
     virtual bool end() = 0;
     virtual void shuffle() = 0;
+    virtual int count() = 0;
 };
 
 class SDG : public Optimizer {
@@ -32,10 +32,6 @@ public:
         this->learning_rate = learning_rate;
         this->batch_size = batch_size;
         this->training_data = training_data;
-    }
-    Mat cost_derivative(Mat& result, Mat& answer)
-    {
-        return result - answer;
     }
 
     Mat optimize(Mat& mat, Mat& nabla)
@@ -67,6 +63,11 @@ public:
     void shuffle()
     {
         std::random_shuffle(training_data.begin(), training_data.end());
+    }
+
+    int count()
+    {
+        return training_data.size();
     }
 };
 

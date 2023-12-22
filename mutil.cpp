@@ -197,6 +197,26 @@ Mat& sigmoid_prime(Mat& in)
     }
     return in;
 }
+
+Mat& relu(Mat& in)
+{
+    for (int i = 0; i < in.size.first; i++) {
+        for (int j = 0; j < in.size.second; j++) {
+            in[i][j] = max(0.0f, in[i][j]);
+        }
+    }
+    return in;
+}
+
+Mat& relu_prime(Mat& in)
+{
+    for (int i = 0; i < in.size.first; i++) {
+        for (int j = 0; j < in.size.second; j++) {
+            in[i][j] = in[i][j] > 0 ? 1 : 0;
+        }
+    }
+    return in;
+}
 }
 
 #endif

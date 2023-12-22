@@ -25,20 +25,26 @@ int main(void)
         train_data.push_back({ train_image[i], mat });
     }
 
-    Network network({ new FlattenLayer(28, 28), new FullyConnectedLayer(28 * 28, 16), new SigmoidLayer(16), new FullyConnectedLayer(16, 16), new SigmoidLayer(16), new FullyConnectedLayer(16, 10), new SigmoidLayer(10) }, new SDG(train_data, 0.5, 10));
+    Network network({ new FlattenLayer(28, 28), new FullyConnectedLayer(28 * 28, 16), new SigmoidLayer(16), new FullyConnectedLayer(16, 16), new RELULayer(16), new FullyConnectedLayer(16, 10), new SigmoidLayer(10) }, new SDG(train_data, 0.5, 10));
     network.init();
     network.train(1);
 
-    for (int i = 0; i < 10; i++) {
-        Mat result = network.forward(test_image[i]);
-        cout << "result: " << max_element(result[0], result[0] + 10) - result[0] << "  ";
-        cout << "answer: " << test_label[i] << endl;
-    }
+    // cout << "forward time: " << network.forwardTime / (float)CLOCKS_PER_SEC << endl;
+    // cout << "backward time: " << network.backwardTime / (float)CLOCKS_PER_SEC << endl;
+    // cout << "matrix multiplication time: " << mutil::multiplyTime / (float)CLOCKS_PER_SEC << endl;
+    // cout << "matrix multiplication count: " << mutil::multiplyCount << endl;
+    // cout << "matrix construct time:" << mutil::constructTime / (float)CLOCKS_PER_SEC << endl;
 
-    cout << "forward time: " << network.forwardTime / (float)CLOCKS_PER_SEC << endl;
-    cout << "backward time: " << network.backwardTime / (float)CLOCKS_PER_SEC << endl;
-    cout << "matrix multiplication time: " << mutil::multiplyTime / (float)CLOCKS_PER_SEC << endl;
-    cout << "matrix multiplication count: " << mutil::multiplyCount << endl;
-    cout << "matrix construct time:" << mutil::constructTime / (float)CLOCKS_PER_SEC << endl;
+    int correct = 0;
+    for (int i = 0; i < test_image.size(); i++) {
+        Mat result = network.forward(test_image[i]);
+        // cout << "result: " << max_element(result[0], result[0] + 10) - result[0] << "  ";
+        // cout << "answer: " << test_label[i] << endl;
+        if (max_element(result[0], result[0] + 10) - result[0] == test_label[i]) {
+            correct++;
+        }
+    }
+    cout << "accuracy on test dataset: " << correct / (float)test_image.size() << endl;
+
     return 0;
 }

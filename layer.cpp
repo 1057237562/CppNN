@@ -147,4 +147,30 @@ public:
     }
 };
 
+class RELULayer : public LinearLayer {
+public:
+    RELULayer(int in)
+        : LinearLayer(in, in)
+    {
+    }
+    Mat forward(Mat& in)
+    {
+        x = in;
+        y = mutil::relu(in);
+        return in;
+    }
+    Mat backward(Mat& in)
+    {
+        return in.dot(mutil::relu_prime(x));
+    }
+
+    void randomize(default_random_engine& e)
+    {
+    }
+
+    void learn(Optimizer* optimizer)
+    {
+    }
+};
+
 #endif
