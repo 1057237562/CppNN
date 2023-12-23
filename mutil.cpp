@@ -12,7 +12,11 @@ using namespace std;
 
 namespace mutil
 {
-
+    enum RandomMethod
+    {
+        NORMAL,
+        UNIFORM
+    };
     static int copyCount = 0;
     static int constructTime = 0;
     static int multiplyTime = 0;
@@ -36,12 +40,23 @@ namespace mutil
             return val[index];
         }
 
-        void randomize(default_random_engine &e)
+        void randomize(default_random_engine &e, RandomMethod method = NORMAL)
         {
-            normal_distribution<float> u(0, 1);
-            for (int i = 0; i < length; i++)
+            if (method == UNIFORM)
             {
-                val[i] = u(e);
+                uniform_real_distribution<float> u(0, 1);
+                for (int i = 0; i < length; i++)
+                {
+                    val[i] = u(e);
+                }
+            }
+            if(method == NORMAL)
+            {
+                normal_distribution<float> u(0, 1);
+                for (int i = 0; i < length; i++)
+                {
+                    val[i] = u(e);
+                }
             }
         }
     };
@@ -204,16 +219,71 @@ namespace mutil
         }
     };
 
-    class Kernel
-    {
-        auto val;
-        pair<int, int> size;
+    class Kernel {
+        vector<float>::iterator val;
+        public:
+            pair<int, int> size;
+            Kernel(int m,int n,vector<float>::iterator val) : val(val) {
+                size = {m, n};
+            }
 
+            auto operator[](int index)
+            {
+                assert(index >= 0 && index < size.first);
+                return val + index * size.second;
+            }
+
+            void operator+=(Kernel& other)
+            {
+                assert(size.first == other.size.first && size.second == other.size.second);
+                for (int i = 0; i < size.first; i++)
+                {
+                    for (int j = 0; j < size.second; j++)
+                    {
+                        (*this)[i][j] += other[i][j];
+                    }
+                }
+            }
+
+            void operator+=(float& theta)
+            {
+                for (int i = 0; i < size.first; i++)
+                {
+                    for (int j = 0; j < size.second; j++)
+                    {
+                        (*this)[i][j] += theta;
+                    }
+                }
+            }
+
+    };
+
+    class Tensor {
+        vector<int> dimension;
+        vector<float>::iterator val;
+        int size = 1;
     public:
-        Kernel(auto list, int height, int width)
+        Tensor(vector<int> dimension,vector<float>::iterator val) : dimension(dimension),val(val) {
+            for (int i = 0; i < dimension.size(); i++) {
+                size *= dimension[i];
+            }
+        }
+
+        Tensor(vector<int> dimension, Mat& data)
         {
-            this->size = {height, width};
-            this->val = list;
+            for (int i = 0; i < dimension.size(); i++) {
+                size *= dimension[i];
+            }
+            this->dimension = dimension;
+            this->val = data[0];
+        }
+
+        auto operator[](int index)
+        {
+            assert(index >= 0 && index < dimension[0]);
+            int dim0 = dimension[0];
+            dimension.erase(dimension.begin());
+            return val + index * (size / dim0);
         }
     };
 
@@ -266,66 +336,35 @@ namespace mutil
         return in;
     }
 
-    Mat conv(Kernel &in, Kernel &kernel, int stride, int padding)
+    pair<int,int> compute_output_size(int in_height, int in_width, int kernel_height, int kernel_width, int stride, int padding)
     {
-        int in_height = in.size.first;
-        int in_width = in.size.second;
-        int kernel_height = kernel.size.first;
-        int kernel_width = kernel.size.second;
         int out_height = (in_height - kernel_height + 2 * padding) / stride + 1;
         int out_width = (in_width - kernel_width + 2 * padding) / stride + 1;
-        Mat out(out_height, out_width);
-        for (int i = 0; i < out_height; i++)
+        return {out_height,out_width};
+    }
+
+    void conv(Kernel &in, Kernel &kernel,Kernel& out, int stride, int padding)
+    {
+        for (int i = 0; i < out.size.first; i++)
         {
-            for (int j = 0; j < out_width; j++)
+            for (int j = 0; j < out.size.second; j++)
             {
                 float sum = 0;
-                for (int k = 0; k < kernel_height; k++)
+                for (int k = 0; k < kernel.size.first; k++)
                 {
-                    for (int l = 0; l < kernel_width; l++)
+                    for (int l = 0; l < kernel.size.second; l++)
                     {
                         int x = i * stride + k - padding;
                         int y = j * stride + l - padding;
-                        if (x >= 0 && x < in_height && y >= 0 && y < in_width)
+                        if (x >= 0 && x < in.size.first && y >= 0 && y < in.size.second)
                         {
                             sum += in[x][y] * kernel[k][l];
                         }
                     }
                 }
-                out[i][j] = sum;
+                out[i][j] += sum;
             }
         }
-        return out;
-    }
-
-    Mat deconv(Mat &in, Mat &kernel, int stride, int padding)
-    {
-        int in_height = in.size.first;
-        int in_width = in.size.second;
-        int kernel_height = kernel.size.first;
-        int kernel_width = kernel.size.second;
-        int out_height = (in_height - 1) * stride + kernel_height - 2 * padding;
-        int out_width = (in_width - 1) * stride + kernel_width - 2 * padding;
-        Mat out(out_height, out_width);
-        for (int i = 0; i < in_height; i++)
-        {
-            for (int j = 0; j < in_width; j++)
-            {
-                for (int k = 0; k < kernel_height; k++)
-                {
-                    for (int l = 0; l < kernel_width; l++)
-                    {
-                        int x = i * stride + k - padding;
-                        int y = j * stride + l - padding;
-                        if (x >= 0 && x < out_height && y >= 0 && y < out_width)
-                        {
-                            out[x][y] += in[i][j] * kernel[k][l];
-                        }
-                    }
-                }
-            }
-        }
-        return out;
     }
 }
 
