@@ -5,6 +5,7 @@
 #include <cmath>
 #include <random>
 #include <time.h>
+#include <cfloat>
 #include <utility>
 #include <vector>
 
@@ -50,7 +51,7 @@ namespace mutil
                     val[i] = u(e);
                 }
             }
-            if(method == NORMAL)
+            if (method == NORMAL)
             {
                 normal_distribution<float> u(0, 1);
                 for (int i = 0; i < length; i++)
@@ -74,7 +75,7 @@ namespace mutil
             size = {m, n};
         }
 
-        Mat(int m,int n,vector<float> &v)
+        Mat(int m, int n, vector<float> &v)
             : val(v)
         {
             size = {m, n};
@@ -195,14 +196,28 @@ namespace mutil
             return res;
         }
 
-        void randomize(default_random_engine &e)
+        void randomize(default_random_engine &e, RandomMethod method = NORMAL)
         {
-            normal_distribution<float> u(0, 1);
-            for (int i = 0; i < size.first; i++)
+            if (method == UNIFORM)
             {
-                for (int j = 0; j < size.second; j++)
+                uniform_real_distribution<float> u(0, 1);
+                for (int i = 0; i < size.first; i++)
                 {
-                    (*this)[i][j] = u(e);
+                    for (int j = 0; j < size.second; j++)
+                    {
+                        (*this)[i][j] = u(e);
+                    }
+                }
+            }
+            if (method == NORMAL)
+            {
+                normal_distribution<float> u(0, 1);
+                for (int i = 0; i < size.first; i++)
+                {
+                    for (int j = 0; j < size.second; j++)
+                    {
+                        (*this)[i][j] = u(e);
+                    }
                 }
             }
         }
@@ -219,59 +234,66 @@ namespace mutil
         }
     };
 
-    class Kernel {
+    class Kernel
+    {
         vector<float>::iterator val;
-        public:
-            pair<int, int> size;
-            Kernel(int m,int n,vector<float>::iterator val) : val(val) {
-                size = {m, n};
-            }
 
-            auto operator[](int index)
-            {
-                assert(index >= 0 && index < size.first);
-                return val + index * size.second;
-            }
+    public:
+        pair<int, int> size;
+        Kernel(int m, int n, vector<float>::iterator val) : val(val)
+        {
+            size = {m, n};
+        }
 
-            void operator+=(Kernel& other)
+        auto operator[](int index)
+        {
+            assert(index >= 0 && index < size.first);
+            return val + index * size.second;
+        }
+
+        void operator+=(Kernel &other)
+        {
+            assert(size.first == other.size.first && size.second == other.size.second);
+            for (int i = 0; i < size.first; i++)
             {
-                assert(size.first == other.size.first && size.second == other.size.second);
-                for (int i = 0; i < size.first; i++)
+                for (int j = 0; j < size.second; j++)
                 {
-                    for (int j = 0; j < size.second; j++)
-                    {
-                        (*this)[i][j] += other[i][j];
-                    }
+                    (*this)[i][j] += other[i][j];
                 }
             }
+        }
 
-            void operator+=(float& theta)
+        void operator+=(float &theta)
+        {
+            for (int i = 0; i < size.first; i++)
             {
-                for (int i = 0; i < size.first; i++)
+                for (int j = 0; j < size.second; j++)
                 {
-                    for (int j = 0; j < size.second; j++)
-                    {
-                        (*this)[i][j] += theta;
-                    }
+                    (*this)[i][j] += theta;
                 }
             }
-
+        }
     };
 
-    class Tensor {
+    class Tensor
+    {
         vector<int> dimension;
         vector<float>::iterator val;
         int size = 1;
+
     public:
-        Tensor(vector<int> dimension,vector<float>::iterator val) : dimension(dimension),val(val) {
-            for (int i = 0; i < dimension.size(); i++) {
+        Tensor(vector<int> dimension, vector<float>::iterator val) : dimension(dimension), val(val)
+        {
+            for (int i = 0; i < dimension.size(); i++)
+            {
                 size *= dimension[i];
             }
         }
 
-        Tensor(vector<int> dimension, Mat& data)
+        Tensor(vector<int> dimension, Mat &data)
         {
-            for (int i = 0; i < dimension.size(); i++) {
+            for (int i = 0; i < dimension.size(); i++)
+            {
                 size *= dimension[i];
             }
             this->dimension = dimension;
@@ -336,14 +358,14 @@ namespace mutil
         return in;
     }
 
-    pair<int,int> compute_output_size(int in_height, int in_width, int kernel_height, int kernel_width, int stride, int padding)
+    pair<int, int> compute_output_size(int in_height, int in_width, int kernel_height, int kernel_width, int stride, int padding)
     {
         int out_height = (in_height - kernel_height + 2 * padding) / stride + 1;
         int out_width = (in_width - kernel_width + 2 * padding) / stride + 1;
-        return {out_height,out_width};
+        return {out_height, out_width};
     }
 
-    void conv(Kernel &in, Kernel &kernel,Kernel& out, int stride, int padding)
+    void conv(Kernel &in, Kernel &kernel, Kernel &out, int stride, int padding)
     {
         for (int i = 0; i < out.size.first; i++)
         {
@@ -358,11 +380,149 @@ namespace mutil
                         int y = j * stride + l - padding;
                         if (x >= 0 && x < in.size.first && y >= 0 && y < in.size.second)
                         {
-                            sum += in[x][y] * kernel[k][l];
+                            out[i][j] += in[x][y] * kernel[k][l];
                         }
                     }
                 }
-                out[i][j] += sum;
+            }
+        }
+    }
+
+    void deconv(Kernel &in, Kernel &kernel, Kernel &out, int stride, int padding)
+    {
+        for (int i = 0; i < in.size.first; i++)
+        {
+            for (int j = 0; j < in.size.second; j++)
+            {
+                for (int k = 0; k < kernel.size.first; k++)
+                {
+                    for (int l = 0; l < kernel.size.second; l++)
+                    {
+                        int x = i * stride + k - padding;
+                        int y = j * stride + l - padding;
+                        if (x >= 0 && x < in.size.first && y >= 0 && y < in.size.second)
+                        {
+                            out[x][y] += in[i][j] * kernel[k][l];
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    float sum(Kernel &in)
+    {
+        float ret = 0;
+        for (int i = 0; i < in.size.first; i++)
+        {
+            for (int j = 0; j < in.size.second; j++)
+            {
+                ret += in[i][j];
+            }
+        }
+        return ret;
+    }
+
+    void max_pooling(Kernel &in, Kernel &out, pair<int, int> &size, int stride)
+    {
+        for (int i = 0; i < out.size.first; i++)
+        {
+            for (int j = 0; j < out.size.second; j++)
+            {
+                float max = FLT_MIN;
+                for (int k = 0; k < size.first; k++)
+                {
+                    for (int l = 0; l < size.second; l++)
+                    {
+                        int x = i * stride + k;
+                        int y = j * stride + l;
+                        if (x >= 0 && x < in.size.first && y >= 0 && y < in.size.second)
+                        {
+                            if (in[x][y] > max)
+                            {
+                                max = in[x][y];
+                            }
+                        }
+                    }
+                }
+                out[i][j] = max;
+            }
+        }
+    }
+
+    void mean_pooling(Kernel &in, Kernel &out, pair<int, int> &size, int stride)
+    {
+        for (int i = 0; i < out.size.first; i++)
+        {
+            for (int j = 0; j < out.size.second; j++)
+            {
+                float sum = 0;
+                for (int k = 0; k < size.first; k++)
+                {
+                    for (int l = 0; l < size.second; l++)
+                    {
+                        int x = i * stride + k;
+                        int y = j * stride + l;
+                        if (x >= 0 && x < in.size.first && y >= 0 && y < in.size.second)
+                        {
+                            sum += in[x][y];
+                        }
+                    }
+                }
+                out[i][j] = sum / (size.first * size.second);
+            }
+        }
+    }
+
+    void max_pooling_prime(Kernel &img, Kernel &delta, Kernel &out, pair<int, int> &size, int stride)
+    {
+        for (int i = 0; i < out.size.first; i++)
+        {
+            for (int j = 0; j < out.size.second; j++)
+            {
+                float max = FLT_MIN;
+                int max_x = 0;
+                int max_y = 0;
+                for (int k = 0; k < size.first; k++)
+                {
+                    for (int l = 0; l < size.second; l++)
+                    {
+                        int x = i * stride + k;
+                        int y = j * stride + l;
+                        if (x >= 0 && x < img.size.first && y >= 0 && y < img.size.second)
+                        {
+                            if (img[x][y] > max)
+                            {
+                                max = img[x][y];
+                                max_x = x;
+                                max_y = y;
+                            }
+                        }
+                    }
+                }
+                out[max_x][max_y] = delta[i][j];
+            }
+        }
+    }
+
+    void mean_pooling_prime(Kernel &delta, Kernel &out, pair<int, int> &size, int stride)
+    {
+        for (int i = 0; i < delta.size.first; i++)
+        {
+            for (int j = 0; j < delta.size.second; j++)
+            {
+                for (int k = 0; k < size.first; k++)
+                {
+                    for (int l = 0; l < size.second; l++)
+                    {
+                        int x = i * stride + k;
+                        int y = j * stride + l;
+                        if (x >= 0 && x < out.size.first && y >= 0 && y < out.size.second)
+                        {
+                            out[x][y] = delta[i][j] / (size.first * size.second);
+                        }
+                    }
+                }
             }
         }
     }

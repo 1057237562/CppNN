@@ -70,7 +70,9 @@
     "optional": "cpp",
     "set": "cpp",
     "string_view": "cpp",
-    "shared_mutex": "cpp"
+    "shared_mutex": "cpp",
+    "cfloat": "cpp",
+    "bit": "cpp"
   },
   "C_Cpp_Runner.cCompilerPath": "gcc",
   "C_Cpp_Runner.cppCompilerPath": "g++",
