@@ -304,7 +304,6 @@ namespace mutil
         {
             assert(index >= 0 && index < dimension[0]);
             int dim0 = dimension[0];
-            dimension.erase(dimension.begin());
             return val + index * (size / dim0);
         }
     };
@@ -476,9 +475,9 @@ namespace mutil
 
     void max_pooling_prime(Kernel &img, Kernel &delta, Kernel &out, pair<int, int> &size, int stride)
     {
-        for (int i = 0; i < out.size.first; i++)
+        for (int i = 0; i < delta.size.first; i++)
         {
-            for (int j = 0; j < out.size.second; j++)
+            for (int j = 0; j < delta.size.second; j++)
             {
                 float max = FLT_MIN;
                 int max_x = 0;

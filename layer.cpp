@@ -16,35 +16,34 @@ public:
     virtual void learn(Optimizer *optimizer) = 0;
 };
 
-class FlattenLayer : public Layer
-{
+class FlattenLayer : public Layer {
+private:
+    pair<int,int> in_size;
 public:
-    int h, w;
-    FlattenLayer(int h, int w)
+    FlattenLayer()
     {
-        this->h = h;
-        this->w = w;
     }
     Mat forward(Mat &in)
     {
-        Mat ret(1, h * w);
-        for (int i = 0; i < h; i++)
+        in_size = in.size;
+        Mat ret(1, in.size.first * in.size.second);
+        for (int i = 0; i < in.size.first; i++)
         {
-            for (int j = 0; j < w; j++)
+            for (int j = 0; j < in.size.second; j++)
             {
-                ret[0][i * w + j] = in[i][j];
+                ret[0][i * in.size.second + j] = in[i][j];
             }
         }
         return ret;
     }
     Mat backward(Mat &in)
     {
-        Mat ret(h, w);
-        for (int i = 0; i < h; i++)
+        Mat ret(in_size.first, in_size.second);
+        for (int i = 0; i < in_size.first; i++)
         {
-            for (int j = 0; j < w; j++)
+            for (int j = 0; j < in_size.second; j++)
             {
-                ret[i][j] = in[0][i * w + j];
+                ret[i][j] = in[0][i * in_size.second + j];
             }
         }
         return ret;
@@ -286,7 +285,7 @@ public:
     PoolingLayer(int height, int width, int channel, pair<int, int> size, int stride, Type type = MAX) : x(channel, height * width), y(channel, height * width), pool_size(size), stride(stride), type(type)
     {
         in_size = {channel, height, width};
-        pair<int, int> out_size = mutil::compute_output_size(in_size[1], in_size[2], size.first, size.second, stride, 0);
+        out_size = mutil::compute_output_size(in_size[1], in_size[2], size.first, size.second, stride, 0);
     }
 
     Mat forward(Mat &in)

@@ -27,15 +27,18 @@ int main(void)
     }
 
     // Network network({ new FlattenLayer(28, 28), new DenseLayer(28 * 28, 16), new SigmoidLayer(), new DenseLayer(16, 16), new SigmoidLayer(), new DenseLayer(16, 10), new SigmoidLayer() }, new SDG(train_data, 0.5, 10));
-    Network network({new ConvLayer(28, 28, 1, 3, 3, 1, 1, 0),
-                     new PoolingLayer(26, 26, 1, {2, 2}, 2),
-                     new ConvLayer(13, 13, 1, 3, 3, 1, 1, 0),
-                     new PoolingLayer(11, 11, 1, {2, 2}, 2),
-                     new FlattenLayer(5, 5),
-                     new DenseLayer(5 * 5, 16),
-                     new SigmoidLayer(),
-                     new DenseLayer(16, 10),
-                     new SigmoidLayer()},
+    Network network({
+        new ConvLayer(28, 28, 1, 3, 3, 6, 1, 0),
+        new PoolingLayer(26, 26, 6, { 2, 2 }, 2),
+        new ConvLayer(13, 13, 6, 3, 3, 16, 1, 0),
+        new PoolingLayer(11, 11, 16, { 2, 2 }, 2),
+        new FlattenLayer(),
+        new DenseLayer(5 * 5 * 16, 120),
+        new SigmoidLayer(),
+        new DenseLayer(120, 84),
+        new SigmoidLayer(),
+        new DenseLayer(84, 10),
+        new SigmoidLayer()},
                     new SDG(train_data, 0.5, 10));
     network.init();
     network.train(1);
