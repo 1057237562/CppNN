@@ -20,7 +20,9 @@ protected:
     Optimizer* optimizer;
 
 public:
-    function<Mat(Mat, Mat)> costfunc = [&](Mat res, Mat ans) { return res - ans; };
+    function<Mat(Mat, Mat)> costfunc = [&](Mat res, Mat ans) {
+        return res - ans;
+    };
     int forwardTime = 0;
     int backwardTime = 0;
     Network(vector<Layer*> layers, Optimizer* optimizer)
@@ -68,22 +70,19 @@ public:
         backwardTime += end - start;
     }
 
-    void train(int training_times = 1)
+    void train()
     {
-        for (int i = 0; i < training_times; i++) {
-            cout << "Training " << i + 1 << "/" << training_times << endl;
-            optimizer->shuffle();
-            for (auto data = optimizer->next(); !optimizer->end();) {
-                for (data = optimizer->next(); optimizer->hasNext(); data = optimizer->next()) {
-                    Mat result = forward(data.first);
-                    backPropagation(result, data.second);
-                }
-                for (auto layer : layers) {
-                    layer->learn(optimizer);
-                }
-                cout << "Processing Batches" << ((optimizer->index + 1) / 10) << "/"
-                     << (optimizer->count() / 10) << endl;
+        optimizer->shuffle();
+        for (auto data = optimizer->next(); !optimizer->end();) {
+            for (data = optimizer->next(); optimizer->hasNext(); data = optimizer->next()) {
+                Mat result = forward(data.first);
+                backPropagation(result, data.second);
             }
+            for (auto layer : layers) {
+                layer->learn(optimizer);
+            }
+            cout << "Processing Batches" << ((optimizer->index + 1) / 10) << "/"
+                 << (optimizer->count() / 10) << endl;
         }
     }
 };
