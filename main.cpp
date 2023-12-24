@@ -55,11 +55,11 @@ int main(void)
     //     new SDG(train_data, 0.5, 10));
     network.init();
 
-    // cout << "forward time: " << network.forwardTime / (float)CLOCKS_PER_SEC << endl;
-    // cout << "backward time: " << network.backwardTime / (float)CLOCKS_PER_SEC << endl;
-    // cout << "matrix multiplication time: " << mutil::multiplyTime / (float)CLOCKS_PER_SEC << endl;
-    // cout << "matrix multiplication count: " << mutil::multiplyCount << endl;
-    // cout << "matrix construct time:" << mutil::constructTime / (float)CLOCKS_PER_SEC << endl;
+    cout << "forward time: " << network.forwardTime / (float)CLOCKS_PER_SEC << endl;
+    cout << "backward time: " << network.backwardTime / (float)CLOCKS_PER_SEC << endl;
+    cout << "matrix multiplication time: " << mutil::multiplyTime / (float)CLOCKS_PER_SEC << endl;
+    cout << "matrix multiplication count: " << mutil::multiplyCount << endl;
+    cout << "matrix construct time:" << mutil::constructTime / (float)CLOCKS_PER_SEC << endl;
 
     network.train();
     int correct = 0;
