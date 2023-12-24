@@ -11,8 +11,10 @@
 using namespace std;
 using namespace mutil;
 
-void train()
+int main(void)
 {
+    cin.tie(0);
+
     vector<Mat> train_image = read_mnist_images("./train-images.idx3-ubyte");
     vector<int> train_label = read_mnist_labels("./train-labels.idx1-ubyte");
 
@@ -70,23 +72,4 @@ void train()
         }
     }
     cout << "accuracy on test dataset: " << correct / (float)test_image.size() << endl;
-}
-
-int main(void)
-{
-    cin.tie(0);
-
-    train();
-
-    // Mat mat(3, 5 * 5);
-    // for (int i = 0; i < 3; i++) {
-    //     for (int j = 0; j < 5 * 5; j++) {
-    //         mat[i][j] = j + 1;
-    //     }
-    // }
-    // ConvLayer conv(5, 5, 3, 3, 3, 1, 1, 0);
-    // default_random_engine e;
-    // conv.randomize(e);
-    // Kernel k(3, 3, conv.w[0]);
-    // debug::print(k);
 }
