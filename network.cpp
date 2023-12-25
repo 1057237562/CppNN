@@ -5,6 +5,7 @@
 #include "layer.cpp"
 #include "mutil.cpp"
 #include "optimizer.cpp"
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <random>
@@ -81,8 +82,22 @@ public:
             for (auto layer : layers) {
                 layer->learn(optimizer);
             }
-            cout << "Processing Batches" << ((optimizer->index + 1) / 10) << "/"
-                 << (optimizer->count() / 10) << endl;
+            cout << "Processing Batches" << ((optimizer->index + 1) / optimizer->batch_size) << "/"
+                 << (optimizer->count() / optimizer->batch_size) << endl;
+        }
+    }
+
+    void saveCheckpoint(ofstream& out)
+    {
+        for (auto layer : layers) {
+            layer->saveCheckpoint(out);
+        }
+    }
+
+    void loadCheckpoint(ifstream& in)
+    {
+        for (auto layer : layers) {
+            layer->loadCheckpoint(in);
         }
     }
 };

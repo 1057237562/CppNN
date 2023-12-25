@@ -2,6 +2,7 @@
 #include "mnist_loader.cpp"
 #include "network.cpp"
 #include "optimizer.cpp"
+#include <fstream>
 #include <iostream>
 #include <random>
 #include <time.h>
@@ -38,9 +39,9 @@ int main(void)
                         new ConvLayer(4, 4, 16, 4, 4, 120, 1, 0),
                         new RELULayer(),
                         new FlattenLayer(),
-                        new DenseLayer(120, 84, mutil::UNIFORM),
+                        new DenseLayer(120, 84),
                         new RELULayer(),
-                        new DenseLayer(84, 10, mutil::UNIFORM),
+                        new DenseLayer(84, 10),
                         new SoftmaxLayer() },
         new SDG(train_data, 0.01, 10));
     // Network network({ new ConvLayer(28, 28, 1, 3, 3, 1, 1, 0),
@@ -53,15 +54,24 @@ int main(void)
     //                     new DenseLayer(16, 10),
     //                     new SigmoidLayer() },
     //     new SDG(train_data, 0.5, 10));
-    network.init();
+    // network.init();
 
-    cout << "forward time: " << network.forwardTime / (float)CLOCKS_PER_SEC << endl;
-    cout << "backward time: " << network.backwardTime / (float)CLOCKS_PER_SEC << endl;
-    cout << "matrix multiplication time: " << mutil::multiplyTime / (float)CLOCKS_PER_SEC << endl;
-    cout << "matrix multiplication count: " << mutil::multiplyCount << endl;
-    cout << "matrix construct time:" << mutil::constructTime / (float)CLOCKS_PER_SEC << endl;
+    // network.train();
 
-    network.train();
+    // ofstream fout("LeNet5.ckpt", ios::out | ios::trunc);
+
+    // network.saveCheckpoint(fout);
+
+    // cout << "forward time: " << network.forwardTime / (float)CLOCKS_PER_SEC << endl;
+    // cout << "backward time: " << network.backwardTime / (float)CLOCKS_PER_SEC << endl;
+    // cout << "matrix multiplication time: " << mutil::multiplyTime / (float)CLOCKS_PER_SEC << endl;
+    // cout << "matrix multiplication count: " << mutil::multiplyCount << endl;
+    // cout << "matrix construct time:" << mutil::constructTime / (float)CLOCKS_PER_SEC << endl;
+
+    ifstream fin("LeNet5.ckpt");
+
+    network.loadCheckpoint(fin);
+
     int correct = 0;
     for (int i = 0; i < test_image.size(); i++) {
         Mat result = network.forward(test_image[i]);

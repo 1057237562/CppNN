@@ -4,6 +4,7 @@
 #include "mutil.cpp"
 #include <algorithm>
 #include <iostream>
+#include <random>
 #include <vector>
 
 using namespace mutil;
@@ -12,6 +13,7 @@ class Optimizer {
 
 public:
     int index = 0;
+    int batch_size;
     virtual Mat optimize(Mat& mat, Mat& nabla) = 0;
     virtual pair<Mat, Mat>& next() = 0;
     virtual bool hasNext() = 0;
@@ -23,7 +25,6 @@ public:
 class SDG : public Optimizer {
 
     float learning_rate;
-    int batch_size;
     vector<pair<Mat, Mat>> training_data;
 
 public:
@@ -62,7 +63,8 @@ public:
 
     void shuffle()
     {
-        std::random_shuffle(training_data.begin(), training_data.end());
+        default_random_engine e;
+        std::shuffle(training_data.begin(), training_data.end(), e);
     }
 
     int count()

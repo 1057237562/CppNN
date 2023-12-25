@@ -1,9 +1,12 @@
 #ifndef MUTIL_CPP
 #define MUTIL_CPP
 
+#include "initializer.cpp"
 #include <assert.h>
 #include <cfloat>
 #include <cmath>
+#include <fstream>
+#include <ostream>
 #include <random>
 #include <time.h>
 #include <utility>
@@ -12,12 +15,6 @@
 using namespace std;
 
 namespace mutil {
-enum RandomMethod {
-    NORMAL,
-    UNIFORM,
-    XAVIER,
-    KAIMING
-};
 static int copyCount = 0;
 static int constructTime = 0;
 static int multiplyTime = 0;
@@ -40,19 +37,10 @@ public:
         return val[index];
     }
 
-    void randomize(default_random_engine& e, RandomMethod method = NORMAL, float a = 0, float b = 1)
+    void randomize(init::Initializer* init, default_random_engine& e)
     {
-        if (method == UNIFORM) {
-            uniform_real_distribution<float> u(a, b);
-            for (int i = 0; i < length; i++) {
-                val[i] = u(e);
-            }
-        }
-        if (method == NORMAL) {
-            normal_distribution<float> u(a, b);
-            for (int i = 0; i < length; i++) {
-                val[i] = u(e);
-            }
+        for (int i = 0; i < length; i++) {
+            val[i] = init->generate(e);
         }
     }
 };
@@ -175,22 +163,11 @@ public:
         return res;
     }
 
-    void randomize(default_random_engine& e, RandomMethod method = NORMAL, float a = 0, float b = 1)
+    void randomize(init::Initializer* init, default_random_engine& e)
     {
-        if (method == UNIFORM) {
-            uniform_real_distribution<float> u(a, b);
-            for (int i = 0; i < size.first; i++) {
-                for (int j = 0; j < size.second; j++) {
-                    (*this)[i][j] = u(e);
-                }
-            }
-        }
-        if (method == NORMAL) {
-            normal_distribution<float> u(a, b);
-            for (int i = 0; i < size.first; i++) {
-                for (int j = 0; j < size.second; j++) {
-                    (*this)[i][j] = u(e);
-                }
+        for (int i = 0; i < size.first; i++) {
+            for (int j = 0; j < size.second; j++) {
+                (*this)[i][j] = init->generate(e);
             }
         }
     }
@@ -203,7 +180,49 @@ public:
             }
         }
     }
+    friend ostream& operator<<(ostream& os, const Mat& mat);
+    friend ofstream& operator<<(ofstream& os, const Mat& mat);
+    friend istream& operator>>(istream& is, Mat& mat);
+    friend ifstream& operator>>(ifstream& is, Mat& mat);
 };
+
+ostream& operator<<(ostream& os, const Mat& mat)
+{
+    os << mat.size.first << ' ' << mat.size.second << ' ';
+    for (int i = 0; i < mat.val.size(); i++) {
+        os << mat.val[i] << ' ';
+    }
+    return os;
+}
+
+ofstream& operator<<(ofstream& os, const Mat& mat)
+{
+    os << mat.size.first << ' ' << mat.size.second << ' ';
+    for (int i = 0; i < mat.val.size(); i++) {
+        os << mat.val[i] << ' ';
+    }
+    return os;
+}
+
+istream& operator>>(istream& is, Mat& mat)
+{
+    is >> mat.size.first >> mat.size.second;
+    mat.val = vector<float>(mat.size.first * mat.size.second);
+    for (int i = 0; i < mat.val.size(); i++) {
+        is >> mat.val[i];
+    }
+    return is;
+}
+
+ifstream& operator>>(ifstream& is, Mat& mat)
+{
+    is >> mat.size.first >> mat.size.second;
+    mat.val = vector<float>(mat.size.first * mat.size.second);
+    for (int i = 0; i < mat.val.size(); i++) {
+        is >> mat.val[i];
+    }
+    return is;
+}
 
 class Kernel {
     vector<float>::iterator val;
