@@ -55,12 +55,14 @@ public:
         : val(m * n)
     {
         size = { m, n };
+        ++constructTime;
     }
 
     Mat(int m, int n, vector<float>& v)
         : val(v)
     {
         size = { m, n };
+        ++constructTime;
     }
 
     auto operator[](int index)
@@ -322,14 +324,13 @@ void relu(Mat& in)
     }
 }
 
-Mat& relu_prime(Mat& in)
+void relu_prime(Mat& in)
 {
     for (int i = 0; i < in.size.first; i++) {
         for (int j = 0; j < in.size.second; j++) {
             in[i][j] = in[i][j] > 0 ? 1 : 0;
         }
     }
-    return in;
 }
 
 pair<int, int> compute_output_size(int in_height, int in_width, int kernel_height, int kernel_width, int stride, int padding)

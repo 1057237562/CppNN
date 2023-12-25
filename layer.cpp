@@ -219,7 +219,8 @@ public:
     }
     Mat backward(Mat& in)
     {
-        return in.dot(mutil::relu_prime(x));
+        mutil::relu_prime(x);
+        return in.dot(x);
     }
 
     void randomize(default_random_engine& e)
