@@ -24,7 +24,7 @@ static init::Initializer* getInit(init::Type type, int n)
 class Layer {
 
 public:
-    virtual Mat forward(Mat& in) = 0;
+    virtual Mat& forward(Mat& in) = 0;
     virtual Mat backward(Mat& in) = 0;
     virtual void randomize(default_random_engine& e) = 0;
     virtual void learn(Optimizer* optimizer) = 0;
@@ -40,16 +40,11 @@ public:
     FlattenLayer()
     {
     }
-    Mat forward(Mat& in)
+    Mat& forward(Mat& in)
     {
         in_size = in.size;
-        Mat ret(1, in.size.first * in.size.second);
-        for (int i = 0; i < in.size.first; i++) {
-            for (int j = 0; j < in.size.second; j++) {
-                ret[0][i * in.size.second + j] = in[i][j];
-            }
-        }
-        return ret;
+        in.size = { 1, in.size.first * in.size.second };
+        return in;
     }
     Mat backward(Mat& in)
     {
@@ -92,7 +87,7 @@ public:
         this->in = in;
         this->out = out;
     }
-    virtual Mat forward(Mat& in) = 0;
+    virtual Mat& forward(Mat& in) = 0;
     virtual Mat backward(Mat& in) = 0;
     virtual void randomize(default_random_engine& e) = 0;
     virtual void learn(Optimizer* optimizer) = 0;
@@ -131,12 +126,11 @@ public:
         delete u;
     }
 
-    Mat forward(Mat& in)
+    Mat& forward(Mat& in)
     {
-        Mat ret = in * w + b;
+        y = in * w + b;
         x = in;
-        y = ret;
-        return ret;
+        return y;
     }
     Mat backward(Mat& in)
     {
@@ -174,21 +168,22 @@ public:
 
 class SigmoidLayer : public Layer {
 protected:
-    Mat x, y;
+    Mat x;
 
 public:
     SigmoidLayer()
     {
     }
-    Mat forward(Mat& in)
+    Mat& forward(Mat& in)
     {
         x = in;
-        y = mutil::sigmoid(in);
+        mutil::sigmoid(in);
         return in;
     }
     Mat backward(Mat& in)
     {
-        return in.dot(mutil::sigmoid_prime(x));
+        mutil::sigmoid_prime(x);
+        return in.dot(x);
     }
 
     void randomize(default_random_engine& e)
@@ -210,16 +205,16 @@ public:
 
 class RELULayer : public Layer {
 protected:
-    Mat x, y;
+    Mat x;
 
 public:
     RELULayer()
     {
     }
-    Mat forward(Mat& in)
+    Mat& forward(Mat& in)
     {
         x = in;
-        y = mutil::relu(in);
+        mutil::relu(in);
         return in;
     }
     Mat backward(Mat& in)
@@ -273,6 +268,7 @@ public:
         this->padding = padding;
         nabla_w.clear(), nabla_b.clear();
         out_size = mutil::compute_output_size(in_size[1], in_size[2], kernel_size[1], kernel_size[2], stride, padding);
+        y = Mat(kernel_size[0], out_size.first * out_size.second);
     }
 
     ConvLayer(int height, int width, int channel, int kernel_height, int kernel_width, int kernel_count, int stride, int padding, init::Type type = init::KAIMING, bool forward = true)
@@ -280,26 +276,24 @@ public:
     {
     }
 
-    Mat forward(Mat& in)
+    Mat& forward(Mat& in)
     {
         Tensor tensor(in_size, in);
-        Mat ret(kernel_size[0], out_size.first * out_size.second);
-        ret.clear();
+        y.clear();
         for (int i = 0; i < in_size[0]; i++) {
             Kernel img(in_size[1], in_size[2], tensor[i]);
             for (int j = 0; j < kernel_size[0]; j++) {
                 Kernel kernel(kernel_size[1], kernel_size[2], w[i * kernel_size[0] + j]);
-                Kernel out(out_size.first, out_size.second, ret[j]);
+                Kernel out(out_size.first, out_size.second, y[j]);
                 mutil::conv(img, kernel, out, stride, padding);
             }
         }
         for (int j = 0; j < kernel_size[0]; j++) {
-            Kernel out(out_size.first, out_size.second, ret[j]);
+            Kernel out(out_size.first, out_size.second, y[j]);
             out += b[0][j];
         }
         x = in;
-        y = ret;
-        return ret;
+        return y;
     }
     Mat backward(Mat& in)
     {
@@ -376,30 +370,29 @@ public:
     {
         in_size = { channel, height, width };
         out_size = mutil::compute_output_size(in_size[1], in_size[2], size.first, size.second, stride, 0);
+        y = Mat(channel, out_size.first * out_size.second);
     }
 
-    Mat forward(Mat& in)
+    Mat& forward(Mat& in)
     {
         Tensor tensor(in_size, in);
-        Mat ret(in_size[0], out_size.first * out_size.second);
-        ret.clear();
+        y.clear();
         if (type == MAX) {
             for (int i = 0; i < in_size[0]; i++) {
                 Kernel img(in_size[1], in_size[2], tensor[i]);
-                Kernel out(out_size.first, out_size.second, ret[i]);
+                Kernel out(out_size.first, out_size.second, y[i]);
                 mutil::max_pooling(img, out, pool_size, stride);
             }
         }
         if (type == MEAN) {
             for (int i = 0; i < in_size[0]; i++) {
                 Kernel img(in_size[1], in_size[2], tensor[i]);
-                Kernel out(out_size.first, out_size.second, ret[i]);
+                Kernel out(out_size.first, out_size.second, y[i]);
                 mutil::mean_pooling(img, out, pool_size, stride);
             }
         }
         x = in;
-        y = ret;
-        return ret;
+        return y;
     }
 
     Mat backward(Mat& in)
@@ -449,10 +442,10 @@ public:
     SoftmaxLayer()
     {
     }
-    Mat forward(Mat& in)
+    Mat& forward(Mat& in)
     {
-        Mat ret = mutil::softmax(in);
-        return ret;
+        mutil::softmax(in);
+        return in;
     }
     Mat backward(Mat& in)
     {

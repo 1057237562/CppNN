@@ -293,14 +293,13 @@ public:
     }
 };
 
-Mat& sigmoid(Mat& in)
+void sigmoid(Mat& in)
 {
     for (int i = 0; i < in.size.first; i++) {
         for (int j = 0; j < in.size.second; j++) {
             in[i][j] = 1 / (1 + exp(-in[i][j]));
         }
     }
-    return in;
 }
 
 Mat& sigmoid_prime(Mat& in)
@@ -314,14 +313,13 @@ Mat& sigmoid_prime(Mat& in)
     return in;
 }
 
-Mat& relu(Mat& in)
+void relu(Mat& in)
 {
     for (int i = 0; i < in.size.first; i++) {
         for (int j = 0; j < in.size.second; j++) {
             in[i][j] = max(0.0f, in[i][j]);
         }
     }
-    return in;
 }
 
 Mat& relu_prime(Mat& in)
@@ -468,9 +466,8 @@ void mean_pooling_prime(Kernel& delta, Kernel& out, pair<int, int>& size, int st
     }
 }
 
-Mat softmax(Mat& in)
+void softmax(Mat& in)
 {
-    Mat ret(in.size.first, in.size.second);
     for (int i = 0; i < in.size.first; i++) {
         float sum = 0;
         float max = FLT_MIN;
@@ -483,10 +480,9 @@ Mat softmax(Mat& in)
             sum += exp(in[i][j] - max);
         }
         for (int j = 0; j < in.size.second; j++) {
-            ret[i][j] = exp(in[i][j] - max) / sum;
+            in[i][j] = exp(in[i][j] - max) / sum;
         }
     }
-    return ret;
 }
 }
 
