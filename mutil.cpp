@@ -499,23 +499,18 @@ inline float im2col_get_pixel(Mat& in, int height, int width, int channels, int 
 
 void im2col(Mat& in, int channels, int height, int width, pair<int, int> ksize, int stride, int pad, Mat& out)
 {
-    int c, h, w;
+    int c, k1, k2, h, w;
     int height_col = (height + 2 * pad - ksize.first) / stride + 1;
     int width_col = (width + 2 * pad - ksize.second) / stride + 1;
 
-    int channels_col = channels * ksize.first * ksize.second;
-    for (c = 0; c < channels_col; ++c) {
-        int w_offset = c % ksize.second;
-        int h_offset = (c / ksize.second) % ksize.first;
-        int c_im = c / ksize.first / ksize.second;
-        for (h = 0; h < height_col; ++h) {
-            for (w = 0; w < width_col; ++w) {
-                int im_row = h_offset + h * stride;
-                int im_col = w_offset + w * stride;
-                int col_index = (c * height_col + h) * width_col + w;
-                assert(col_index < out.size.first * out.size.second);
-                assert(col_index != 3);
-                out[0][col_index] = im2col_get_pixel(in, height, width, channels, im_row, im_col, c_im, pad);
+    for (c = 0; c < channels; c++) {
+        for (h = 0; h < height_col; h++) {
+            for (w = 0; w < width_col; w++) {
+                for (k1 = 0; k1 < ksize.first; k1++) {
+                    for (k2 = 0; k2 < ksize.second; k2++) {
+                        out[c][((h * width_col + w) * ksize.first + k1) * ksize.second + k2] = im2col_get_pixel(in, height, width, channels, h * stride + k1, w * stride + k2, c, pad);
+                    }
+                }
             }
         }
     }
