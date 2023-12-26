@@ -504,8 +504,8 @@ void im2col(Mat& in, int channels, int height, int width, pair<int, int> ksize, 
 
     int channels_col = channels * ksize.first * ksize.second;
     for (c = 0; c < channels_col; ++c) {
-        int w_offset = c % ksize.first;
-        int h_offset = (c / ksize.first) % ksize.second;
+        int w_offset = c % ksize.second;
+        int h_offset = (c / ksize.second) % ksize.first;
         int c_im = c / ksize.first / ksize.second;
         for (h = 0; h < height_col; ++h) {
             for (w = 0; w < width_col; ++w) {
@@ -536,8 +536,8 @@ void col2im(Mat& in, int channels, int height, int width, pair<int, int> ksize, 
 
     int channels_col = channels * ksize.first * ksize.second;
     for (c = 0; c < channels_col; ++c) {
-        int w_offset = c % ksize.first;
-        int h_offset = (c / ksize.first) % ksize.second;
+        int w_offset = c % ksize.second;
+        int h_offset = (c / ksize.second) % ksize.first;
         int c_im = c / ksize.first / ksize.second;
         for (h = 0; h < height_col; ++h) {
             for (w = 0; w < width_col; ++w) {

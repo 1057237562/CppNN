@@ -279,18 +279,14 @@ public:
 
     Mat& forward(Mat& in)
     {
-        Tensor tensor(in_size, in);
         y.clear();
-        for (int i = 0; i < in_size[0]; i++) {
-            Kernel img(in_size[1], in_size[2], tensor[i]);
-            for (int j = 0; j < kernel_size[0]; j++) {
-                Kernel kernel(kernel_size[1], kernel_size[2], w[i * kernel_size[0] + j]);
-                Kernel out(out_size.first, out_size.second, y[j]);
-                mutil::conv(img, kernel, out, stride, padding);
-            }
-        }
+
+        Mat data_col(in_size[0], out_size.first * out_size.second);
+        mutil::im2col(in, in_size[0], in_size[1], in_size[2], { kernel_size[1], kernel_size[2] }, stride, padding, data_col);
         for (int j = 0; j < kernel_size[0]; j++) {
+            Kernel kernel(kernel_size[1] * kernel_size[2], 1, w[j]);
             Kernel out(out_size.first, out_size.second, y[j]);
+
             out += b[0][j];
         }
         x = in;
