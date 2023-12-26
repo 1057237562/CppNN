@@ -5,8 +5,13 @@
 #include "mutil.cpp"
 #include "optimizer.cpp"
 #include <fstream>
+#include <mutex>
+#include <thread>
 
 using namespace mutil;
+
+std::mutex tasks_mutex;
+unsigned int threadCnt = 0;
 
 static init::Initializer* getInit(init::Type type, int n)
 {
@@ -281,14 +286,28 @@ public:
     {
         Tensor tensor(in_size, in);
         y.clear();
-        for (int i = 0; i < in_size[0]; i++) {
+        auto f = [&](int i) {
             Kernel img(in_size[1], in_size[2], tensor[i]);
             for (int j = 0; j < kernel_size[0]; j++) {
                 Kernel kernel(kernel_size[1], kernel_size[2], w[i * kernel_size[0] + j]);
                 Kernel out(out_size.first, out_size.second, y[j]);
                 mutil::conv(img, kernel, out, stride, padding);
             }
+            std::unique_lock<mutex> lock(tasks_mutex);
+            --threadCnt;
+            lock.unlock();
+        };
+        for (int i = 0; i < in_size[0]; i++) {
+            while (threadCnt > thread::hardware_concurrency())
+                ;
+            std::unique_lock<mutex> lock(tasks_mutex);
+            ++threadCnt;
+            thread t(f, i);
+            t.detach();
+            lock.unlock();
         }
+        while (threadCnt)
+            ;
         for (int j = 0; j < kernel_size[0]; j++) {
             Kernel out(out_size.first, out_size.second, y[j]);
             out += b[0][j];
@@ -304,18 +323,45 @@ public:
         ret.clear();
         delta_w.clear();
         delta_b.clear();
+        auto f1 = [](Kernel img, Kernel kernel, Kernel out, int stride, int padding) {
+            mutil::conv(img, kernel, out, stride, padding);
+            std::unique_lock<mutex> lock(tasks_mutex);
+            --threadCnt;
+            lock.unlock();
+        };
+        auto f2 = [](Kernel img, Kernel kernel, Kernel out, int stride, int padding) {
+            mutil::conv_transpose(img, kernel, out, stride, padding);
+            std::unique_lock<mutex> lock(tasks_mutex);
+            --threadCnt;
+            lock.unlock();
+        };
+
         for (int i = 0; i < in_size[0]; i++) {
             Kernel img(in_size[1], in_size[2], img_tensor[i]);
             for (int j = 0; j < kernel_size[0]; j++) {
                 Kernel dw_kernel(kernel_size[1], kernel_size[2], delta_w[i * kernel_size[0] + j]);
                 Kernel in_kernel(out_size.first, out_size.second, delta_tensor[j]);
-                mutil::conv(img, in_kernel, dw_kernel, stride, padding);
+                while (threadCnt > thread::hardware_concurrency())
+                    ;
+                std::unique_lock<mutex> lock(tasks_mutex);
+                ++threadCnt;
+                thread t(f1, img, in_kernel, dw_kernel, stride, padding);
+                t.detach();
+                lock.unlock();
                 delta_b[j][0] += mutil::sum(in_kernel);
                 Kernel kernel(kernel_size[1], kernel_size[2], w[i * kernel_size[0] + j]);
                 Kernel out(in_size[1], in_size[2], ret[i]);
-                mutil::conv_transpose(in_kernel, kernel, out, stride, padding);
+                while (threadCnt > thread::hardware_concurrency())
+                    ;
+                std::unique_lock<mutex> lock2(tasks_mutex);
+                ++threadCnt;
+                thread t2(f2, in_kernel, kernel, out, stride, padding);
+                t2.detach();
+                lock2.unlock();
             }
         }
+        while (threadCnt)
+            ;
         nabla_w += delta_w;
         nabla_b += delta_b;
         return ret;
