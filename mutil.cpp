@@ -546,6 +546,7 @@ void col2im(Mat& in, int channels, int height, int width, pair<int, int> ksize, 
                 int im_row = h_offset + h * stride;
                 int im_col = w_offset + w * stride;
                 int col_index = (c * height_col + h) * width_col + w;
+                assert(col_index < in.size.first * in.size.second);
                 float val = in[0][col_index];
                 col2im_add_pixel(out, height, width, channels, im_row, im_col, c_im, pad, val);
             }

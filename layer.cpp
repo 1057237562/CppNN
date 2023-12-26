@@ -299,24 +299,27 @@ public:
     }
     Mat backward(Mat& in)
     {
-        Tensor img_tensor(in_size, x);
+        Mat data_col(in_size[0], out_size.first * out_size.second * kernel_size[1] * kernel_size[2]);
+        mutil::im2col(x, in_size[0], in_size[1], in_size[2], out_size, stride, padding, data_col);
+        Mat ret_img(in_size[0], out_size.first * out_size.second * kernel_size[1] * kernel_size[2]);
         Tensor delta_tensor({ kernel_size[0], out_size.first, out_size.second }, in);
         Mat ret(in_size[0], in_size[1] * in_size[2]);
         ret.clear();
         delta_w.clear();
         delta_b.clear();
         for (int i = 0; i < in_size[0]; i++) {
-            Kernel img(in_size[1], in_size[2], img_tensor[i]);
+            Kernel img(out_size.first * out_size.second, kernel_size[1] * kernel_size[2], data_col[i]);
             for (int j = 0; j < kernel_size[0]; j++) {
-                Kernel dw_kernel(kernel_size[1], kernel_size[2], delta_w[i * kernel_size[0] + j]);
-                Kernel in_kernel(out_size.first, out_size.second, delta_tensor[j]);
-                mutil::conv(img, in_kernel, dw_kernel, stride, padding);
+                Kernel dw_kernel(1, kernel_size[1] * kernel_size[2], delta_w[i * kernel_size[0] + j]);
+                Kernel in_kernel(1, out_size.first * out_size.second, delta_tensor[j]);
+                mutil::multiply(in_kernel, img, dw_kernel);
                 delta_b[j][0] += mutil::sum(in_kernel);
-                Kernel kernel(kernel_size[1], kernel_size[2], w[i * kernel_size[0] + j]);
-                Kernel out(in_size[1], in_size[2], ret[i]);
-                mutil::conv_transpose(in_kernel, kernel, out, stride, padding);
+                Kernel kernel(kernel_size[1] * kernel_size[2], 1, w[i * kernel_size[0] + j]);
+                Kernel out(kernel_size[1] * kernel_size[2], out_size.first * out_size.second, ret_img[i]);
+                mutil::multiply(kernel, in_kernel, out);
             }
         }
+        mutil::col2im(ret_img, in_size[0], in_size[1], in_size[2], { kernel_size[1], kernel_size[2] }, stride, padding, ret);
         nabla_w += delta_w;
         nabla_b += delta_b;
         return ret;
