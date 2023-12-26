@@ -283,11 +283,11 @@ public:
         Mat data_col(in_size[0], out_size.first * out_size.second * kernel_size[1] * kernel_size[2]);
         mutil::im2col(in, in_size[0], in_size[1], in_size[2], { kernel_size[1], kernel_size[2] }, stride, padding, data_col);
         for (int i = 0; i < in_size[0]; i++) {
-            Kernel col(out_size.first * out_size.second, kernel_size[1] * kernel_size[2], data_col[i]);
+            Kernel col(kernel_size[1] * kernel_size[2], out_size.first * out_size.second, data_col[i]);
             for (int j = 0; j < kernel_size[0]; j++) {
-                Kernel kernel(kernel_size[1] * kernel_size[2], 1, w[i * kernel_size[0] + j]);
-                Kernel out(out_size.first * out_size.second, 1, y[j]);
-                mutil::multiply(col, kernel, out);
+                Kernel kernel(1, kernel_size[1] * kernel_size[2], w[i * kernel_size[0] + j]);
+                Kernel out(1, out_size.first * out_size.second, y[j]);
+                mutil::multiply(kernel, col, out);
             }
         }
         for (int j = 0; j < kernel_size[0]; j++) {
