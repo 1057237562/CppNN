@@ -54,9 +54,9 @@ int main(void)
     //                     new DenseLayer(16, 10),
     //                     new SigmoidLayer() },
     //     new SDG(train_data, 0.5, 10));
-    // network.init();
+    network.init();
 
-    // network.train();
+    network.train();
 
     // ofstream fout("LeNet5.ckpt", ios::out | ios::trunc);
 
@@ -68,9 +68,9 @@ int main(void)
     // cout << "matrix multiplication count: " << mutil::multiplyCount << endl;
     // cout << "matrix construct time:" << mutil::constructTime / (float)CLOCKS_PER_SEC << endl;
 
-    ifstream fin("LeNet5.ckpt");
+    // ifstream fin("LeNet5.ckpt");
 
-    network.loadCheckpoint(fin);
+    // network.loadCheckpoint(fin);
 
     int correct = 0;
     for (int i = 0; i < test_image.size(); i++) {

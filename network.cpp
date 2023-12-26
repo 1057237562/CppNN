@@ -11,6 +11,8 @@
 #include <random>
 #include <time.h>
 
+#define endl '\n'
+
 using namespace std;
 using namespace mutil;
 
@@ -82,8 +84,9 @@ public:
             for (auto layer : layers) {
                 layer->learn(optimizer);
             }
-            cout << "Processing Batches" << ((optimizer->index + 1) / optimizer->batch_size) << "/"
-                 << (optimizer->count() / optimizer->batch_size) << endl;
+            if (optimizer->index % (optimizer->batch_size * 100) == 0)
+                cout << "Processing Batches : " << ((optimizer->index + 1) / optimizer->batch_size) << "/"
+                     << (optimizer->count() / optimizer->batch_size) << endl;
         }
     }
 
