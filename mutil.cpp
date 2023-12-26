@@ -6,6 +6,7 @@
 #include <cfloat>
 #include <cmath>
 #include <fstream>
+#include <iostream>
 #include <ostream>
 #include <random>
 #include <time.h>
@@ -512,6 +513,8 @@ void im2col(Mat& in, int channels, int height, int width, pair<int, int> ksize, 
                 int im_row = h_offset + h * stride;
                 int im_col = w_offset + w * stride;
                 int col_index = (c * height_col + h) * width_col + w;
+                assert(col_index < out.size.first * out.size.second);
+                assert(col_index != 3);
                 out[0][col_index] = im2col_get_pixel(in, height, width, channels, im_row, im_col, c_im, pad);
             }
         }
@@ -544,11 +547,28 @@ void col2im(Mat& in, int channels, int height, int width, pair<int, int> ksize, 
                 int im_row = h_offset + h * stride;
                 int im_col = w_offset + w * stride;
                 int col_index = (c * height_col + h) * width_col + w;
-                double val = in[0][col_index];
+                float val = in[0][col_index];
                 col2im_add_pixel(out, height, width, channels, im_row, im_col, c_im, pad, val);
             }
         }
     }
+}
+
+void multiply(Kernel& a, Kernel& b, Kernel& res)
+{
+    assert(a.size.second == b.size.first);
+    assert(res.size.first == a.size.first && res.size.second == b.size.second);
+    auto start = clock();
+    float r;
+    for (int i = 0; i < a.size.first; ++i)
+        for (int k = 0; k < a.size.second; ++k) {
+            r = a[i][k];
+            for (int j = 0; j < b.size.second; ++j)
+                res[i][j] += b[k][j] * r;
+        }
+    auto end = clock();
+    multiplyTime += end - start;
+    ++multiplyCount;
 }
 }
 

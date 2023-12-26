@@ -12,10 +12,8 @@
 using namespace std;
 using namespace mutil;
 
-int main(void)
+void train()
 {
-    cin.tie(0);
-
     vector<Mat> train_image = read_mnist_images("./train-images.idx3-ubyte");
     vector<int> train_label = read_mnist_labels("./train-labels.idx1-ubyte");
 
@@ -62,24 +60,71 @@ int main(void)
 
     // network.saveCheckpoint(fout);
 
-    // cout << "forward time: " << network.forwardTime / (float)CLOCKS_PER_SEC << endl;
-    // cout << "backward time: " << network.backwardTime / (float)CLOCKS_PER_SEC << endl;
-    // cout << "matrix multiplication time: " << mutil::multiplyTime / (float)CLOCKS_PER_SEC << endl;
-    // cout << "matrix multiplication count: " << mutil::multiplyCount << endl;
-    // cout << "matrix construct time:" << mutil::constructTime / (float)CLOCKS_PER_SEC << endl;
-
     ifstream fin("LeNet5.ckpt");
 
     network.loadCheckpoint(fin);
 
     int correct = 0;
-    for (int i = 0; i < test_image.size(); i++) {
+    for (int i = 0; i < 10; i++) {
         Mat result = network.forward(test_image[i]);
-        // cout << "result: " << max_element(result[0], result[0] + 10) - result[0] << "  ";
-        // cout << "answer: " << test_label[i] << endl;
+        cout << "result: " << max_element(result[0], result[0] + 10) - result[0] << "  ";
+        cout << "answer: " << test_label[i] << endl;
         if (max_element(result[0], result[0] + 10) - result[0] == test_label[i]) {
             correct++;
         }
     }
     cout << "accuracy on test dataset: " << correct / (float)test_image.size() << endl;
+
+    cout << "forward time: " << network.forwardTime / (float)CLOCKS_PER_SEC << endl;
+    cout << "backward time: " << network.backwardTime / (float)CLOCKS_PER_SEC << endl;
+    cout << "matrix multiplication time: " << mutil::multiplyTime / (float)CLOCKS_PER_SEC << endl;
+    cout << "matrix multiplication count: " << mutil::multiplyCount << endl;
+    cout << "matrix construct time:" << mutil::constructTime / (float)CLOCKS_PER_SEC << endl;
+}
+
+int main(void)
+{
+    cin.tie(0);
+    vector<float> v(25 * 3);
+    for (int j = 0; j < 3; j++)
+        for (int i = 0; i < 25; i++) {
+            v[j * 25 + i] = (j + 1) * 100 + i + 1;
+        }
+    Mat img(3, 25, v);
+    auto osize = mutil::compute_output_size(5, 5, 2, 2, 1, 0);
+    Mat col(3, osize.first * osize.second * 4);
+    mutil::im2col(img, 3, 5, 5, { 2, 2 }, 1, 0, col);
+    vector<float> v2(3 * 4);
+    for (int j = 0; j < 3; j++)
+        for (int i = 0; i < 4; i++)
+            v2[j * 4 + i] = i + 1;
+    Mat kernel(3, 2 * 2, v2);
+    Mat ret(1, osize.first * osize.second);
+    Mat convret(osize.first, osize.second);
+    for (int i = 0; i < 3; i++) {
+        Kernel in(osize.first * osize.second, 2 * 2, col[i]);
+        Kernel k(4, 1, kernel[i]);
+        Kernel out(osize.first * osize.second, 1, ret[0]);
+        mutil::multiply(in, k, out);
+        Kernel convimg(5, 5, img[i]);
+        Kernel conk(2, 2, kernel[i]);
+        Kernel convout(osize.first, osize.second, convret[0]);
+        mutil::conv(convimg, conk, convout, 1, 0);
+        for (int j = 0; j < osize.first; j++) {
+            for (int k = 0; k < osize.second; k++) {
+                cout << convret[0][j * osize.first + k] << " ";
+            }
+            cout << endl;
+        }
+        cout << endl;
+        for (int j = 0; j < osize.first; j++) {
+            for (int k = 0; k < osize.second; k++) {
+                cout << ret[0][j * osize.first + k] << " ";
+            }
+            cout << endl;
+        }
+        cout << endl;
+    }
+
+    // train();
 }
