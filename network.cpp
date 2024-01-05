@@ -10,6 +10,7 @@
 #include <iostream>
 #include <random>
 #include <time.h>
+#include <vector>
 
 #define endl '\n'
 
@@ -21,6 +22,7 @@ class Network {
 protected:
     vector<Layer*> layers;
     Optimizer* optimizer;
+    int batch_size;
 
 public:
     function<Mat(Mat, Mat)> costfunc = [&](Mat res, Mat ans) {
@@ -28,7 +30,8 @@ public:
     };
     int forwardTime = 0;
     int backwardTime = 0;
-    Network(vector<Layer*> layers, Optimizer* optimizer)
+    Network(vector<Layer*> layers, Optimizer* optimizer, int batch_size)
+        : batch_size(batch_size)
     {
         this->layers = layers;
         this->optimizer = optimizer;
@@ -73,20 +76,23 @@ public:
         backwardTime += end - start;
     }
 
-    void train()
+    void train(vector<pair<Mat, Mat>>& data, default_random_engine e = default_random_engine())
     {
-        optimizer->shuffle();
-        for (auto data = optimizer->next(); !optimizer->end();) {
-            for (data = optimizer->next(); optimizer->hasNext(); data = optimizer->next()) {
-                Mat result = forward(data.first);
-                backPropagation(result, data.second);
+        shuffle(data.begin(), data.end(), e);
+        int index = 0;
+        for (; index < data.size(); index++) {
+            Mat result = forward(data[index].first);
+            backPropagation(result, data[index].second);
+            for (index++; index % batch_size && index < data.size(); index++) {
+                Mat result = forward(data[index].first);
+                backPropagation(result, data[index].second);
             }
             for (auto layer : layers) {
                 layer->learn(optimizer);
             }
-            if (optimizer->index % (optimizer->batch_size * 100) == 0)
-                cout << "Processing Batches : " << ((optimizer->index + 1) / optimizer->batch_size) << "/"
-                     << (optimizer->count() / optimizer->batch_size) << endl;
+            if (index % (batch_size * 100) == 0)
+                cout << "Processing Batches : " << ((index + 1) / batch_size) << "/"
+                     << (data.size() / batch_size) << endl;
         }
     }
 
