@@ -80,38 +80,38 @@ void train()
     cout << "backward time: " << network.backwardTime / (float)CLOCKS_PER_SEC << endl;
     cout << "matrix multiplication time: " << mutil::multiplyTime / (float)CLOCKS_PER_SEC << endl;
     cout << "matrix multiplication count: " << mutil::multiplyCount << endl;
-    cout << "matrix construct time:" << mutil::constructTime / (float)CLOCKS_PER_SEC << endl;
+    cout << "matrix construct time:" << mutil::constructTime << endl;
 }
 
 int main(void)
 {
     cin.tie(0);
-    train();
+    // train();
 
-    // Mat mat = readBmp("./test.bmp");
-    // Kernel k(28, 28, mat[0]);
+    Mat mat = readBmp("./test.bmp");
+    Kernel k(28, 28, mat[0]);
     // debug::print(k);
 
     // vector<pair<Mat, Mat>> train_data;
-    // Network network({ new ConvLayer(28, 28, 1, 5, 5, 6, 1, 0),
-    //                     new RELULayer(),
-    //                     new PoolingLayer(24, 24, 6, { 2, 2 }, 2),
-    //                     new ConvLayer(12, 12, 6, 5, 5, 16, 1, 0),
-    //                     new RELULayer(),
-    //                     new PoolingLayer(8, 8, 16, { 2, 2 }, 2),
-    //                     new ConvLayer(4, 4, 16, 4, 4, 120, 1, 0),
-    //                     new RELULayer(),
-    //                     new FlattenLayer(),
-    //                     new DenseLayer(120, 84),
-    //                     new RELULayer(),
-    //                     new DenseLayer(84, 10),
-    //                     new SoftmaxLayer() },
-    //     new SDG(0.001), 10);
+    Network network({ new ConvLayer(28, 28, 1, 5, 5, 6, 1, 0),
+                        new RELULayer(),
+                        new PoolingLayer(24, 24, 6, { 2, 2 }, 2),
+                        new ConvLayer(12, 12, 6, 5, 5, 16, 1, 0),
+                        new RELULayer(),
+                        new PoolingLayer(8, 8, 16, { 2, 2 }, 2),
+                        new ConvLayer(4, 4, 16, 4, 4, 120, 1, 0),
+                        new RELULayer(),
+                        new FlattenLayer(),
+                        new DenseLayer(120, 84),
+                        new RELULayer(),
+                        new DenseLayer(84, 10),
+                        new SoftmaxLayer() },
+        new SDG(0.001), 10);
 
-    // ifstream fin("LeNet5.ckpt");
+    ifstream fin("LeNet5.ckpt");
 
-    // network.loadCheckpoint(fin);
+    network.loadCheckpoint(fin);
 
-    // Mat result = network.forward(k.to_Mat());
-    // cout << max_element(result[0], result[0] + 10) - result[0] << endl;
+    Mat result = network.forward(k.to_Mat());
+    cout << max_element(result[0], result[0] + 10) - result[0] << endl;
 }
