@@ -262,6 +262,17 @@ public:
             }
         }
     }
+
+    Mat to_Mat()
+    {
+        Mat res(size.first, size.second);
+        for (int i = 0; i < size.first; i++) {
+            for (int j = 0; j < size.second; j++) {
+                res[i][j] = (*this)[i][j];
+            }
+        }
+        return res;
+    }
 };
 
 class Tensor {

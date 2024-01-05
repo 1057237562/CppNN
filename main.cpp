@@ -1,3 +1,4 @@
+#include "bmp_loader.cpp"
 #include "debug.cpp"
 #include "mnist_loader.cpp"
 #include "network.cpp"
@@ -52,17 +53,17 @@ void train()
     //                     new DenseLayer(16, 10),
     //                     new SigmoidLayer() },
     //     new SDG(train_data, 0.5, 10));
-    network.init();
+    // network.init();
 
-    network.train();
+    // network.train();
 
-    ofstream fout("LeNet5.ckpt", ios::out | ios::trunc);
+    // ofstream fout("LeNet5.ckpt", ios::out | ios::trunc);
 
-    network.saveCheckpoint(fout);
+    // network.saveCheckpoint(fout);
 
-    // ifstream fin("LeNet5.ckpt");
+    ifstream fin("LeNet5.ckpt");
 
-    // network.loadCheckpoint(fin);
+    network.loadCheckpoint(fin);
 
     int correct = 0;
     for (int i = 0; i < test_image.size(); i++) {
@@ -85,5 +86,32 @@ void train()
 int main(void)
 {
     cin.tie(0);
-    train();
+    // train();
+
+    Mat mat = readBmp("./test.bmp");
+    Kernel k(28, 28, mat[0]);
+    // debug::print(k);
+
+    vector<pair<Mat, Mat>> train_data;
+    Network network({ new ConvLayer(28, 28, 1, 5, 5, 6, 1, 0),
+                        new RELULayer(),
+                        new PoolingLayer(24, 24, 6, { 2, 2 }, 2),
+                        new ConvLayer(12, 12, 6, 5, 5, 16, 1, 0),
+                        new RELULayer(),
+                        new PoolingLayer(8, 8, 16, { 2, 2 }, 2),
+                        new ConvLayer(4, 4, 16, 4, 4, 120, 1, 0),
+                        new RELULayer(),
+                        new FlattenLayer(),
+                        new DenseLayer(120, 84),
+                        new RELULayer(),
+                        new DenseLayer(84, 10),
+                        new SoftmaxLayer() },
+        new SDG(train_data, 0.01, 10));
+
+    ifstream fin("LeNet5.ckpt");
+
+    network.loadCheckpoint(fin);
+
+    Mat result = network.forward(k.to_Mat());
+    cout << max_element(result[0], result[0] + 10) - result[0] << endl;
 }

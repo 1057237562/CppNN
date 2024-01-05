@@ -11,7 +11,7 @@
                 "-o",
                 "${fileDirname}\\main.exe",
                 "-std=c++17",
-                "-Ofast"
+                //"-Ofast"
             ],
             "options": {
                 "cwd": "${fileDirname}"
