@@ -17,6 +17,25 @@
 using namespace std;
 using namespace mutil;
 
+function<Mat(Mat&, Mat&)> MSE = [](Mat& res, Mat& ans) {
+    return (res - ans) * (1.0f / ans.size.first / ans.size.second);
+};
+
+function<Mat(Mat&, Mat&)> L1 = [](Mat& res, Mat& ans) {
+    Mat ret = Mat(res.size.first, res.size.second);
+    for (int i = 0; i < res.size.first; i++) {
+        for (int j = 0; j < res.size.second; j++) {
+            ret[i][j] = res[i][j] > ans[i][j] ? 1 : -1; // Seem to be wrong at res == ans
+                                                        // result will be concussion
+        }
+    }
+    return ret;
+};
+
+function<Mat(Mat&, Mat&)> CrossEntropy = [](Mat& res, Mat& ans) {
+    return (ans / res) * -1.0f;
+};
+
 class Network {
 
 protected:
@@ -25,8 +44,8 @@ protected:
     int batch_size;
 
 public:
-    function<Mat(Mat, Mat)> costfunc = [&](Mat res, Mat ans) {
-        return res - ans;
+    function<Mat(Mat&, Mat&)> costfunc = [](Mat& res, Mat& ans) {
+        return (res - ans) * (1.0f / ans.size.first / ans.size.second);
     };
     int forwardTime = 0;
     int backwardTime = 0;

@@ -7,6 +7,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <math.h>
 #include <ostream>
 #include <random>
 #include <time.h>
@@ -72,6 +73,12 @@ public:
         return val.begin() + index * size.second;
     }
 
+    auto operator[](int index) const // pretent to be constant lol
+    {
+        assert(index >= 0 && index < size.first);
+        return val.begin() + index * size.second;
+    }
+
     Mat& dot(Mat& other)
     {
         assert(size.first == other.size.first && size.second == other.size.second);
@@ -83,7 +90,18 @@ public:
         return *this;
     }
 
-    Mat& operator+(Mat& other)
+    Mat& operator/(const Mat& other)
+    {
+        assert(size.first == other.size.first && size.second == other.size.second);
+        for (int i = 0; i < size.first; i++) {
+            for (int j = 0; j < size.second; j++) {
+                (*this)[i][j] /= other[i][j];
+            }
+        }
+        return *this;
+    }
+
+    Mat& operator+(const Mat& other)
     {
         assert(size.first == other.size.first && size.second == other.size.second);
         for (int i = 0; i < size.first; i++) {
@@ -94,7 +112,7 @@ public:
         return *this;
     }
 
-    Mat& operator+=(Mat& other)
+    Mat& operator+=(const Mat& other)
     {
         assert(size.first == other.size.first && size.second == other.size.second);
         for (int i = 0; i < size.first; i++) {
@@ -105,7 +123,7 @@ public:
         return *this;
     }
 
-    Mat& operator-(Mat& other)
+    Mat& operator-(const Mat& other)
     {
         assert(size.first == other.size.first && size.second == other.size.second);
         for (int i = 0; i < size.first; i++) {
@@ -127,7 +145,7 @@ public:
         return *this;
     }
 
-    Mat operator*(Mat& other)
+    Mat operator*(const Mat& other)
     {
         assert(size.second == other.size.first);
         auto start = clock();
@@ -145,7 +163,7 @@ public:
         return res;
     }
 
-    Mat& operator*(float& theta)
+    Mat& operator*(const float& theta)
     {
         for (int i = 0; i < size.first; i++) {
             for (int j = 0; j < size.second; j++) {
@@ -307,13 +325,14 @@ public:
     }
 };
 
-void sigmoid(Mat& in)
+Mat& sigmoid(Mat& in)
 {
     for (int i = 0; i < in.size.first; i++) {
         for (int j = 0; j < in.size.second; j++) {
             in[i][j] = 1 / (1 + exp(-in[i][j]));
         }
     }
+    return in;
 }
 
 Mat& sigmoid_prime(Mat& in)
@@ -327,22 +346,44 @@ Mat& sigmoid_prime(Mat& in)
     return in;
 }
 
-void relu(Mat& in)
+Mat& relu(Mat& in)
 {
     for (int i = 0; i < in.size.first; i++) {
         for (int j = 0; j < in.size.second; j++) {
             in[i][j] = max(0.0f, in[i][j]);
         }
     }
+    return in;
 }
 
-void relu_prime(Mat& in)
+Mat& relu_prime(Mat& in)
 {
     for (int i = 0; i < in.size.first; i++) {
         for (int j = 0; j < in.size.second; j++) {
             in[i][j] = in[i][j] > 0 ? 1 : 0;
         }
     }
+    return in;
+}
+
+Mat& tanh(Mat& in)
+{
+    for (int i = 0; i < in.size.first; i++) {
+        for (int j = 0; j < in.size.second; j++) {
+            in[i][j] = ::tanh(in[i][j]);
+        }
+    }
+    return in;
+}
+
+Mat& tanh_prime(Mat& in)
+{
+    for (int i = 0; i < in.size.first; i++) {
+        for (int j = 0; j < in.size.second; j++) {
+            in[i][j] = 1 - in[i][j] * in[i][j];
+        }
+    }
+    return in;
 }
 
 pair<int, int> compute_output_size(int in_height, int in_width, int kernel_height, int kernel_width, int stride, int padding)
@@ -580,6 +621,21 @@ void multiply(Kernel& a, Kernel& b, Kernel& res)
     auto end = clock();
     multiplyTime += end - start;
     ++multiplyCount;
+}
+
+Mat concat(const Mat& a, const Mat& b)
+{
+    assert(a.size.first == b.size.first);
+    Mat res(a.size.first, a.size.second + b.size.second);
+    for (int i = 0; i < a.size.first; i++) {
+        for (int j = 0; j < a.size.second; j++) {
+            res[i][j] = a[i][j];
+        }
+        for (int j = 0; j < b.size.second; j++) {
+            res[i][j + a.size.second] = b[i][j];
+        }
+    }
+    return res;
 }
 }
 

@@ -42,7 +42,7 @@ void train()
                         new RELULayer(),
                         new DenseLayer(84, 10),
                         new SoftmaxLayer() },
-        new SDG(0.001), 10);
+        new SDG(0.01), 10);
     // Network network({ new ConvLayer(28, 28, 1, 3, 3, 1, 1, 0),
     //                     new PoolingLayer(26, 26, 1, { 2, 2 }, 2),
     //                     new ConvLayer(13, 13, 1, 3, 3, 1, 1, 0),
@@ -83,11 +83,8 @@ void train()
     cout << "matrix construct time:" << mutil::constructTime << endl;
 }
 
-int main(void)
+void test()
 {
-    cin.tie(0);
-    // train();
-
     Mat mat = readBmp("./test.bmp");
     Kernel k(28, 28, mat[0]);
     // debug::print(k);
@@ -106,7 +103,7 @@ int main(void)
                         new RELULayer(),
                         new DenseLayer(84, 10),
                         new SoftmaxLayer() },
-        new SDG(0.001), 10);
+        new SDG(0.01), 10);
 
     ifstream fin("LeNet5.ckpt");
 
@@ -114,4 +111,11 @@ int main(void)
 
     Mat result = network.forward(k.to_Mat());
     cout << max_element(result[0], result[0] + 10) - result[0] << endl;
+}
+
+int main(void)
+{
+    cin.tie(0);
+    train();
+    // test();
 }

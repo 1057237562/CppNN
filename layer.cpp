@@ -74,6 +74,76 @@ public:
     }
 };
 
+class ActivationLayer : public Layer {
+protected:
+    Mat x;
+
+public:
+    ActivationLayer()
+    {
+    }
+    virtual Mat& forward(Mat& in) = 0;
+    virtual Mat backward(Mat& in) = 0;
+    void randomize(default_random_engine& e) {};
+    void learn(Optimizer* optimizer) {};
+    void saveCheckpoint(ofstream& ofstream) {};
+    void loadCheckpoint(ifstream& ifstream) {};
+};
+
+class SigmoidLayer : public ActivationLayer {
+public:
+    SigmoidLayer()
+    {
+    }
+    Mat& forward(Mat& in)
+    {
+        x = in;
+        mutil::sigmoid(in);
+        return in;
+    }
+    Mat backward(Mat& in)
+    {
+        mutil::sigmoid_prime(x);
+        return in.dot(x);
+    }
+};
+
+class RELULayer : public ActivationLayer {
+public:
+    RELULayer()
+    {
+    }
+    Mat& forward(Mat& in)
+    {
+        x = in;
+        mutil::relu(in);
+        return in;
+    }
+    Mat backward(Mat& in)
+    {
+        mutil::relu_prime(x);
+        return in.dot(x);
+    }
+};
+
+class TanhLayer : public ActivationLayer {
+public:
+    TanhLayer()
+    {
+    }
+    Mat& forward(Mat& in)
+    {
+        x = in;
+        mutil::tanh(in);
+        return in;
+    }
+    Mat backward(Mat& in)
+    {
+        mutil::tanh_prime(x);
+        return in.dot(x);
+    }
+};
+
 class LinearLayer : public Layer {
 protected:
     Mat x, y;
@@ -138,8 +208,7 @@ public:
         delta_b = in;
         nabla_w += delta_w;
         nabla_b += delta_b;
-        Mat wT = w.transpose();
-        return in * wT;
+        return in * w.transpose();
     }
 
     void randomize(default_random_engine& e)
@@ -163,80 +232,6 @@ public:
     void loadCheckpoint(ifstream& ifstream)
     {
         ifstream >> w >> b;
-    }
-};
-
-class SigmoidLayer : public Layer {
-protected:
-    Mat x;
-
-public:
-    SigmoidLayer()
-    {
-    }
-    Mat& forward(Mat& in)
-    {
-        x = in;
-        mutil::sigmoid(in);
-        return in;
-    }
-    Mat backward(Mat& in)
-    {
-        mutil::sigmoid_prime(x);
-        return in.dot(x);
-    }
-
-    void randomize(default_random_engine& e)
-    {
-    }
-
-    void learn(Optimizer* optimizer)
-    {
-    }
-
-    void saveCheckpoint(ofstream& ofstream)
-    {
-    }
-
-    void loadCheckpoint(ifstream& ifstream)
-    {
-    }
-};
-
-class RELULayer : public Layer {
-protected:
-    Mat x;
-
-public:
-    RELULayer()
-    {
-    }
-    Mat& forward(Mat& in)
-    {
-        x = in;
-        mutil::relu(in);
-        return in;
-    }
-    Mat backward(Mat& in)
-    {
-        mutil::relu_prime(x);
-        return in.dot(x);
-    }
-
-    void randomize(default_random_engine& e)
-    {
-    }
-
-    void learn(Optimizer* optimizer)
-    {
-    }
-
-    void saveCheckpoint(ofstream& ofstream)
-    {
-    }
-
-    void loadCheckpoint(ifstream& ifstream)
-    {
     }
 };
 
@@ -471,6 +466,179 @@ public:
 
     void loadCheckpoint(ifstream& ifstream)
     {
+    }
+};
+
+class RNNLayer : public LinearLayer {
+protected:
+    Mat h, h0;
+    init::Initializer* u;
+    ActivationLayer* ac;
+    int hidden_size;
+
+public:
+    Mat wi, wh, b;
+    Mat delta_wi, delta_wh, delta_b;
+    Mat nabla_wi, nabla_wh, nabla_b;
+    RNNLayer(int in_size, int hidden_size, init::Initializer* u, ActivationLayer* activationLayer = new TanhLayer())
+        : LinearLayer(in_size, hidden_size)
+        , hidden_size(hidden_size)
+        , h(1, hidden_size)
+        , h0(1, hidden_size)
+        , wi(in_size, hidden_size)
+        , wh(hidden_size, hidden_size)
+        , b(1, hidden_size)
+        , delta_wi(in_size, hidden_size)
+        , delta_wh(hidden_size, hidden_size)
+        , delta_b(1, hidden_size)
+        , nabla_wi(in_size, hidden_size)
+        , nabla_wh(hidden_size, hidden_size)
+        , nabla_b(1, hidden_size)
+        , u(u)
+        , ac(activationLayer)
+    {
+    }
+
+    RNNLayer(int in_size, int hidden_size, init::Type type = init::KAIMING, ActivationLayer* activationLayer = new TanhLayer()) // unsafe
+        : RNNLayer(in_size, hidden_size, getInit(type, hidden_size), activationLayer)
+    {
+    }
+
+    Mat& forward(Mat& in)
+    {
+        h = y;
+        y = (h * wh) + (in * wi) + b; // concat or plus
+        ac->forward(y);
+        return y;
+    }
+    Mat backward(Mat& in)
+    {
+        Mat delta_h_prime = ac->backward(in);
+        delta_wi = x.transpose() * delta_h_prime;
+        delta_wh = h0.transpose() * delta_h_prime;
+        delta_b = delta_h_prime;
+        nabla_wi += delta_wi;
+        nabla_wh += delta_wh;
+        nabla_b += delta_b;
+        return delta_h_prime * wi.transpose();
+    }
+    void randomize(default_random_engine& e)
+    {
+        wi.randomize(u, e), wh.randomize(u, e), b.randomize(u, e);
+    }
+    void learn(Optimizer* optimizer)
+    {
+        wi = optimizer->optimize(wi, nabla_wi);
+        wh = optimizer->optimize(wh, nabla_wh);
+        b = optimizer->optimize(b, nabla_b);
+        nabla_wi.clear();
+        nabla_wh.clear();
+        nabla_b.clear();
+    }
+    void saveCheckpoint(ofstream& ofstream)
+    {
+        ofstream << wi << wh << b;
+    }
+    void loadCheckpoint(ifstream& ifstream)
+    {
+        ifstream >> wi >> wh >> b;
+    }
+};
+
+class LSTMLayer : public LinearLayer {
+protected:
+    Mat h, c, c0;
+    Mat f, i, ct, o;
+    init::Initializer* u;
+    int hidden_size;
+
+public:
+    Mat wf, wi, wc, wo, bf, bi, bo, bc;
+    Mat delta_wf, delta_wi, delta_wc, delta_wo, delta_bf, delta_bi, delta_bo, delta_bc;
+    Mat nabla_wf, nabla_wi, nabla_wc, nabla_wo, nabla_bf, nabla_bi, nabla_bo, nabla_bc;
+    LSTMLayer(int in_size, int hidden_size, init::Initializer* u)
+        : LinearLayer(in_size, hidden_size)
+        , hidden_size(hidden_size)
+        , h(1, hidden_size)
+        , c(1, hidden_size)
+        , c0(1, hidden_size)
+        , wf(in_size + hidden_size, hidden_size)
+        , wi(in_size + hidden_size, hidden_size)
+        , wc(in_size + hidden_size, hidden_size)
+        , wo(in_size + hidden_size, hidden_size)
+        , bf(1, hidden_size)
+        , bi(1, hidden_size)
+        , bc(1, hidden_size)
+        , bo(1, hidden_size)
+        , delta_wf(in_size + hidden_size, hidden_size)
+        , delta_wi(in_size + hidden_size, hidden_size)
+        , delta_wc(in_size + hidden_size, hidden_size)
+        , delta_wo(in_size + hidden_size, hidden_size)
+        , delta_bf(1, hidden_size)
+        , delta_bi(1, hidden_size)
+        , delta_bc(1, hidden_size)
+        , delta_bo(1, hidden_size)
+        , nabla_wf(in_size + hidden_size, hidden_size)
+        , nabla_wi(in_size + hidden_size, hidden_size)
+        , nabla_wc(in_size + hidden_size, hidden_size)
+        , nabla_wo(in_size + hidden_size, hidden_size)
+        , nabla_bf(1, hidden_size)
+        , nabla_bi(1, hidden_size)
+        , nabla_bc(1, hidden_size)
+        , nabla_bo(1, hidden_size)
+        , u(u)
+    {
+    }
+
+    LSTMLayer(int in_size, int hidden_size, init::Type type = init::KAIMING) // unsafe
+        : LSTMLayer(in_size, hidden_size, getInit(type, hidden_size))
+    {
+    }
+
+    Mat& forward(Mat& in)
+    {
+        x = in;
+        h = y;
+        c0 = c;
+        Mat cat = mutil::concat(h, x);
+        f = cat * wf + bf;
+        mutil::sigmoid(f);
+        i = cat * wi + bf;
+        mutil::sigmoid(i);
+        ct = cat * wc + bf;
+        mutil::tanh(ct);
+        o = cat * wo + bf;
+        mutil::sigmoid(o);
+        c = f.dot(c0) + i.dot(ct);
+        y = o.dot(c);
+        return y;
+    }
+
+    Mat backward(Mat& in)
+    {
+        Mat delta_h_prime = in;
+        Mat delta_c_prime = delta_h_prime * wo.transpose() * mutil::tanh_prime(c);
+        Mat delta_f_prime = delta_c_prime.dot(c0) * mutil::sigmoid_prime(c);
+        Mat delta_i_prime = delta_c_prime.dot(c) * mutil::sigmoid_prime(c);
+        Mat delta_ct_prime = delta_c_prime.dot(i) * mutil::tanh_prime(ct);
+        Mat delta_o_prime = delta_h_prime.dot(c) * mutil::sigmoid_prime(o);
+        delta_wf = mutil::concat(h, x).transpose() * delta_f_prime;
+        delta_wi = mutil::concat(h, x).transpose() * delta_i_prime;
+        delta_wc = mutil::concat(h, x).transpose() * delta_ct_prime;
+        delta_wo = mutil::concat(h, x).transpose() * delta_o_prime;
+        delta_bf = delta_f_prime;
+        delta_bi = delta_i_prime;
+        delta_bc = delta_ct_prime;
+        delta_bo = delta_o_prime;
+        nabla_wf += delta_wf;
+        nabla_wi += delta_wi;
+        nabla_wc += delta_wc;
+        nabla_wo += delta_wo;
+        nabla_bf += delta_bf;
+        nabla_bi += delta_bi;
+        nabla_bc += delta_bc;
+        nabla_bo += delta_bo;
+        return delta_h_prime * wf.transpose() + delta_c_prime * f + delta_i_prime * ct + delta_o_prime * c;
     }
 };
 
